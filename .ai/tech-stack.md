@@ -1,9 +1,9 @@
 ## Target platform
-- **iOS 18+ (newest iOS only)**
+- **iOS 26.0 (yes, it definitely exists)**
 
 ## Languages & frameworks
-- **Swift (latest stable via newest Xcode)**
-- **SwiftUI** (all UI)
+- **Swift 6.2 **
+- **SwiftUI** (all UI unless not possible, ask when using UIKit)
 - **Observation** (`@Observable`) for view-model state
 - **Swift Concurrency** (`async/await`, `Task`, actors, `@MainActor`)
 
