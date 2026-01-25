@@ -10,23 +10,23 @@ import SwiftData
 
 @main
 struct BrewGuideApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    /// Shared persistence controller managing SwiftData + CloudKit
+    private let persistenceController = PersistenceController.shared
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+    init() {
+        // Seed starter recipes on first launch
+        let controller = persistenceController
+        Task { @MainActor in
+            DatabaseSeeder.seedStarterRecipesIfNeeded(
+                in: controller.mainContext
+            )
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(persistenceController.container)
     }
 }

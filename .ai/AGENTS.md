@@ -16,6 +16,10 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 - Do not introduce third-party frameworks without asking first.
 - Avoid UIKit unless requested.
 
+## Documentation
+
+Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
+
 
 ## Swift instructions
 
