@@ -10,6 +10,7 @@ import Foundation
 /// Manages user preferences using UserDefaults.
 @MainActor
 final class PreferencesStore {
+    @MainActor
     static let shared = PreferencesStore()
     
     private let defaults = UserDefaults.standard

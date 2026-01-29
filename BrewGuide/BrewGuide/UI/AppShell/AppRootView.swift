@@ -101,28 +101,12 @@ private struct SettingsTabRootView: View {
 
 // MARK: - Placeholder Navigation Destination Views
 
-/// Navigation wrapper for recipe detail that fetches the recipe by ID.
+/// Navigation wrapper for recipe detail.
 private struct RecipeDetailNavigationView: View {
     let recipeId: UUID
-    @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        if let recipe = fetchRecipe() {
-            RecipeDetailView(recipe: recipe)
-        } else {
-            ContentUnavailableView(
-                "Recipe Not Found",
-                systemImage: "exclamationmark.triangle",
-                description: Text("This recipe may have been deleted.")
-            )
-        }
-    }
-    
-    private func fetchRecipe() -> Recipe? {
-        let descriptor = FetchDescriptor<Recipe>(
-            predicate: #Predicate { $0.id == recipeId }
-        )
-        return try? modelContext.fetch(descriptor).first
+        RecipeDetailView(recipeId: recipeId)
     }
 }
 
@@ -132,15 +116,8 @@ private struct LogDetailNavigationView: View {
     @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        if let log = fetchLog() {
-            BrewLogDetailView(log: log)
-        } else {
-            ContentUnavailableView(
-                "Log Not Found",
-                systemImage: "exclamationmark.triangle",
-                description: Text("This log may have been deleted.")
-            )
-        }
+        EmptyView()
+        // TODO: IMPLEMENT
     }
     
     private func fetchLog() -> BrewLog? {

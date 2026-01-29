@@ -19,7 +19,7 @@ struct ContentView: View {
                 Section("Recipes") {
                     ForEach(recipes) { recipe in
                         NavigationLink {
-                            RecipeDetailView(recipe: recipe)
+                            PlaceholderRecipeDetailView(recipe: recipe)
                         } label: {
                             VStack(alignment: .leading) {
                                 Text(recipe.name)
@@ -35,7 +35,7 @@ struct ContentView: View {
                 Section("Recent Brews") {
                     ForEach(recentLogs.prefix(5)) { log in
                         NavigationLink {
-                            BrewLogDetailView(log: log)
+                            PlaceholderBrewLogDetailView(log: log)
                         } label: {
                             VStack(alignment: .leading) {
                                 Text(log.recipeNameAtBrew)
@@ -62,7 +62,7 @@ struct ContentView: View {
 
 // MARK: - Placeholder Detail Views
 
-struct RecipeDetailView: View {
+struct PlaceholderRecipeDetailView: View {
     let recipe: Recipe
     
     var body: some View {
@@ -115,7 +115,7 @@ struct RecipeDetailView: View {
     }
 }
 
-struct BrewLogDetailView: View {
+struct PlaceholderBrewLogDetailView: View {
     let log: BrewLog
     
     var body: some View {
