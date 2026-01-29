@@ -15,11 +15,13 @@ final class BrewLogRepository: BaseRepository<BrewLog> {
     
     /// Fetch brew logs for a specific method
     func fetchLogs(for method: BrewMethod) throws -> [BrewLog] {
+        // Fetch all logs and filter in memory
+        // SwiftData predicates don't support captured enum values
         let descriptor = FetchDescriptor<BrewLog>(
-            predicate: #Predicate { $0.method == method },
             sortBy: [SortDescriptor(\BrewLog.timestamp, order: .reverse)]
         )
-        return try fetch(descriptor: descriptor)
+        let allLogs = try fetch(descriptor: descriptor)
+        return allLogs.filter { $0.method == method }
     }
     
     /// Fetch a brew log by its ID

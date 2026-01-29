@@ -119,12 +119,12 @@ extension PersistenceController {
     /// Seeds preview data
     @MainActor
     private static func seedPreviewData(in context: ModelContext) {
-        // Create a sample V60 starter recipe
+        // Create a sample V60 balanced recipe
         let starterRecipe = Recipe(
             isStarter: true,
             origin: .starterTemplate,
             method: .v60,
-            name: "V60 Starter",
+            name: "V60 Balanced",
             defaultDose: 15.0,
             defaultTargetYield: 250.0,
             defaultWaterTemperature: 94.0,
@@ -197,7 +197,7 @@ extension PersistenceController {
         let log1 = BrewLog(
             timestamp: Date().addingTimeInterval(-86400 * 2), // 2 days ago
             method: .v60,
-            recipeNameAtBrew: "V60 Starter",
+            recipeNameAtBrew: "V60 Balanced",
             doseGrams: 15.0,
             targetYieldGrams: 250.0,
             waterTemperatureCelsius: 94.0,
@@ -212,7 +212,7 @@ extension PersistenceController {
         let log2 = BrewLog(
             timestamp: Date().addingTimeInterval(-86400), // 1 day ago
             method: .v60,
-            recipeNameAtBrew: "V60 Starter",
+            recipeNameAtBrew: "V60 Balanced",
             doseGrams: 15.0,
             targetYieldGrams: 250.0,
             waterTemperatureCelsius: 93.0,

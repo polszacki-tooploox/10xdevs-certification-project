@@ -7,23 +7,27 @@ final class RecipeRepository: BaseRepository<Recipe> {
     
     /// Fetch all recipes for a specific brew method
     func fetchRecipes(for method: BrewMethod) throws -> [Recipe] {
-        let descriptor = FetchDescriptor<Recipe>(
-            predicate: #Predicate { $0.method == method }
-        )
-        let results = try fetch(descriptor: descriptor)
-        // Sort manually: starters first, then alphabetical by name
-        return results.sorted {  ($0.isStarter && !$1.isStarter) || ($0.isStarter == $1.isStarter && $0.name < $1.name)
-        }
+        // Fetch all recipes and filter in memory
+        // SwiftData predicates don't support captured enum values
+        let descriptor = FetchDescriptor<Recipe>()
+        let allRecipes = try fetch(descriptor: descriptor)
+        
+        // Filter by method and sort: starters first, then alphabetical by name
+        return allRecipes
+            .filter { $0.method == method }
+            .sorted { ($0.isStarter && !$1.isStarter) || ($0.isStarter == $1.isStarter && $0.name < $1.name) }
     }
     
     /// Fetch the starter recipe for a specific method
     func fetchStarterRecipe(for method: BrewMethod) throws -> Recipe? {
+        // Fetch all starter recipes and filter in memory
         let descriptor = FetchDescriptor<Recipe>(
             predicate: #Predicate { recipe in
-                recipe.isStarter == true && recipe.method == method
+                recipe.isStarter == true
             }
         )
-        return try fetch(descriptor: descriptor).first
+        let starters = try fetch(descriptor: descriptor)
+        return starters.first { $0.method == method }
     }
     
     /// Fetch a recipe by its ID

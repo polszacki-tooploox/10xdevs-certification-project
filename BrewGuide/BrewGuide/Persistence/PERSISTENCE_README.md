@@ -248,7 +248,7 @@ Use `@Query` for reactive data:
 ```swift
 struct RecipeListView: View {
     @Query(
-        filter: #Predicate<Recipe> { $0.method == .v60 },
+        filter: #Predicate<Recipe> { $0.method == .v60 },  // Literal enum values work
         sort: [
             SortDescriptor(\Recipe.isStarter, order: .reverse),
             SortDescriptor(\Recipe.name)
@@ -263,6 +263,11 @@ struct RecipeListView: View {
     }
 }
 ```
+
+**Important**: SwiftData predicates have limitations with enums:
+- ✅ Literal enum values work: `$0.method == .v60`
+- ❌ Captured enum variables don't work: `let m = method; $0.method == m`
+- ✅ Workaround: Fetch all and filter in Swift: `allRecipes.filter { $0.method == method }`
 
 ### Preview Support
 
