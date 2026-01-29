@@ -121,7 +121,7 @@ final class RecipeRepository: BaseRepository<Recipe> {
             let totalWater = waterSteps.max() ?? 0 // Assuming cumulative targets
             let difference = abs(totalWater - recipe.defaultTargetYield)
             if difference > 1.0 {
-                errors.append(.waterMismatch(expected: recipe.defaultTargetYield, actual: totalWater))
+                errors.append(.waterTotalMismatch(expected: recipe.defaultTargetYield, actual: totalWater))
             }
         }
         
@@ -138,32 +138,6 @@ enum RecipeRepositoryError: LocalizedError {
         switch self {
         case .cannotDeleteStarterRecipe:
             return "Starter recipes cannot be deleted."
-        }
-    }
-}
-
-enum RecipeValidationError: LocalizedError {
-    case emptyName
-    case invalidDose
-    case invalidYield
-    case noSteps
-    case negativeTimer(stepIndex: Int)
-    case waterMismatch(expected: Double, actual: Double)
-    
-    var errorDescription: String? {
-        switch self {
-        case .emptyName:
-            return "Recipe name cannot be empty."
-        case .invalidDose:
-            return "Dose must be greater than zero."
-        case .invalidYield:
-            return "Target yield must be greater than zero."
-        case .noSteps:
-            return "Recipe must have at least one step."
-        case .negativeTimer(let index):
-            return "Step \(index + 1) has a negative timer duration."
-        case .waterMismatch(let expected, let actual):
-            return "Water additions (\(actual)g) don't match target yield (\(expected)g)."
         }
     }
 }

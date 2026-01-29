@@ -18,8 +18,8 @@ final class PersistenceController {
         BrewLog.self
     ])
     
-    /// Default configuration with CloudKit support
-    private static var defaultConfiguration: ModelConfiguration {
+    /// Configuration with CloudKit support (optional)
+    private static var cloudKitConfiguration: ModelConfiguration {
         // CloudKit container identifier should match the app's container ID
         // Format: iCloud.{bundle-id}
         let configuration = ModelConfiguration(
@@ -29,6 +29,15 @@ final class PersistenceController {
             cloudKitDatabase: .private("iCloud.com.brewguide.BrewGuide")
         )
         return configuration
+    }
+    
+    /// Local-only configuration (no CloudKit sync)
+    private static var localConfiguration: ModelConfiguration {
+        ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            allowsSave: true
+        )
     }
     
     /// In-memory configuration for testing/previews
@@ -41,24 +50,42 @@ final class PersistenceController {
     
     /// Private initializer for production use
     private init() {
-        container = try! ModelContainer(
-            for: Self.schema,
-            configurations: [Self.defaultConfiguration]
-        )
+        // Try CloudKit configuration first, fall back to local storage if it fails
+        do {
+            container = try ModelContainer(
+                for: Self.schema,
+                configurations: [Self.cloudKitConfiguration]
+            )
+        } catch {
+            print("⚠️ CloudKit initialization failed: \(error). Falling back to local storage.")
+            do {
+                container = try ModelContainer(
+                    for: Self.schema,
+                    configurations: [Self.localConfiguration]
+                )
+            } catch {
+                fatalError("Failed to initialize ModelContainer with local storage: \(error)")
+            }
+        }
     }
     
     /// Initializer for testing/preview with custom configuration
     init(inMemory: Bool) {
-        if inMemory {
-            container = try! ModelContainer(
-                for: Self.schema,
-                configurations: [Self.inMemoryConfiguration]
-            )
-        } else {
-            container = try! ModelContainer(
-                for: Self.schema,
-                configurations: [Self.defaultConfiguration]
-            )
+        do {
+            if inMemory {
+                container = try ModelContainer(
+                    for: Self.schema,
+                    configurations: [Self.inMemoryConfiguration]
+                )
+            } else {
+                // For testing, use local configuration (no CloudKit)
+                container = try ModelContainer(
+                    for: Self.schema,
+                    configurations: [Self.localConfiguration]
+                )
+            }
+        } catch {
+            fatalError("Failed to initialize ModelContainer: \(error)")
         }
     }
     

@@ -84,34 +84,9 @@ final class BrewLogRepository: BaseRepository<BrewLog> {
         
         // Note length limit (280 characters per PRD suggestion)
         if let note = log.note, note.count > 280 {
-            errors.append(.noteTooLong(current: note.count, max: 280))
+            errors.append(.noteTooLong(count: note.count))
         }
         
         return errors
-    }
-}
-
-// MARK: - Errors
-
-enum BrewLogValidationError: LocalizedError {
-    case invalidRating(Int)
-    case emptyRecipeName
-    case invalidDose
-    case invalidYield
-    case noteTooLong(current: Int, max: Int)
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidRating(let rating):
-            return "Rating must be between 1 and 5 (received: \(rating))."
-        case .emptyRecipeName:
-            return "Recipe name cannot be empty."
-        case .invalidDose:
-            return "Dose must be greater than zero."
-        case .invalidYield:
-            return "Target yield must be greater than zero."
-        case .noteTooLong(let current, let max):
-            return "Note is too long (\(current) characters). Maximum is \(max) characters."
-        }
     }
 }

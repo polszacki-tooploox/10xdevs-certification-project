@@ -25,7 +25,7 @@ struct BrewGuideApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppRootView()
         }
         .modelContainer(persistenceController.container)
     }
