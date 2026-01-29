@@ -16,7 +16,7 @@ struct AppRootView: View {
     
     var body: some View {
         TabView(selection: $coordinator.selectedTab) {
-            Tab("Brew", systemImage: "cup.and.saucer.fill", value: .recipes) {
+            Tab("Recipes", systemImage: "cup.and.saucer.fill", value: .recipes) {
                 RecipesTabRootView()
             }
             
@@ -46,7 +46,7 @@ private struct RecipesTabRootView: View {
         @Bindable var bindableCoordinator = coordinator
         
         NavigationStack(path: $bindableCoordinator.recipesPath) {
-            ConfirmInputsView()
+            RecipeListView()
                 .navigationDestination(for: RecipesRoute.self) { route in
                     switch route {
                     case .recipeList:
