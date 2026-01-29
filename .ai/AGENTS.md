@@ -126,3 +126,13 @@ Prefer feature-first grouping **inside** the layers below. A feature should gene
 
 - If installed, make sure SwiftLint returns no warnings or errors before committing.
 
+
+
+## Force unwraps
+
+Avoid using force unwraps. Always handle optional values and catch possible errors.
+
+
+## Project file
+
+We're using directory based project and don't need to add files to the Xcode project files.
