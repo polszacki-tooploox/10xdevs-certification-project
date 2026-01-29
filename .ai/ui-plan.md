@@ -33,7 +33,7 @@ Below, “API compatibility” references the internal repositories/use-cases de
 
 ### 2.2 Recipes Tab (includes Brew Entry)
 
-- **View name**: `ConfirmInputsView` (Recipes tab root)
+- **View name**: `ConfirmInputsView` 
 - **Main purpose**: Default entry screen to confirm/adjust pre-brew inputs for the **last-selected recipe** (starter on first run), compute scaled targets, and start the guided brew.
 - **Key information to display**:
   - Selected recipe name
@@ -62,8 +62,8 @@ Below, “API compatibility” references the internal repositories/use-cases de
   - Compute scaling + warnings via `Scaling` (`ScaleInputsRequest/Response`)
   - Gate Start brew via `RecipeUseCase.assertRecipeIsBrewable(recipeId)`
   - Create brew plan via `BrewSessionUseCase.createPlan(...)`
-
-- **View name**: `RecipeListView`
+ 
+- **View name**: `RecipeListView` (Recipes tab root)
 - **Main purpose**: Browse and select recipes (starter + custom)
 - **Key information to display**:
   - List grouped/ordered by name
