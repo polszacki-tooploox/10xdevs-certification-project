@@ -23,7 +23,12 @@ struct RecipeDetailView: View {
     var body: some View {
         Group {
             if let viewModel {
-                RecipeDetailScreen(viewModel: viewModel)
+                RecipeDetailScreen(
+                    viewModel: viewModel,
+                    coordinator: coordinator,
+                    recipeId: recipeId,
+                    showInvalidRecipeAlert: $showInvalidRecipeAlert
+                )
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
                             RecipeDetailToolbarActions(
@@ -105,12 +110,11 @@ struct RecipeDetailView: View {
     
     // MARK: - Action Handlers
     
-    private func handleUseRecipe() {
+    private func handleBrewRecipe() {
         guard let viewModel else { return }
         
         if viewModel.canUseRecipe {
-            viewModel.useRecipe()
-            dismiss()
+            coordinator.presentConfirmInputs(recipeId: recipeId)
         } else {
             showInvalidRecipeAlert = true
         }
@@ -146,6 +150,10 @@ private struct RecipeDetailScreen: View {
     @Bindable var viewModel: RecipeDetailViewModel
     @Environment(\.dismiss) private var dismiss
     
+    let coordinator: AppRootCoordinator
+    let recipeId: UUID
+    @Binding var showInvalidRecipeAlert: Bool
+    
     var body: some View {
         Group {
             if viewModel.state.isLoading && viewModel.state.detail == nil {
@@ -171,9 +179,9 @@ private struct RecipeDetailScreen: View {
                 // Loaded content
                 RecipeDetailContent(
                     detail: detail,
-                    isUseEnabled: viewModel.canUseRecipe,
-                    onUse: {
-                        handleUseRecipe()
+                    isBrewEnabled: viewModel.canUseRecipe,
+                    onBrew: {
+                        handleBrewRecipe()
                     }
                 )
                 .refreshable {
@@ -190,10 +198,11 @@ private struct RecipeDetailScreen: View {
         }
     }
     
-    private func handleUseRecipe() {
+    private func handleBrewRecipe() {
         if viewModel.canUseRecipe {
-            viewModel.useRecipe()
-            dismiss()
+            coordinator.presentConfirmInputs(recipeId: recipeId)
+        } else {
+            showInvalidRecipeAlert = true
         }
     }
 }
@@ -203,8 +212,8 @@ private struct RecipeDetailScreen: View {
 /// Scrollable content showing recipe details
 private struct RecipeDetailContent: View {
     let detail: RecipeDetailDTO
-    let isUseEnabled: Bool
-    let onUse: () -> Void
+    let isBrewEnabled: Bool
+    let onBrew: () -> Void
     
     var body: some View {
         ScrollView {
@@ -234,8 +243,8 @@ private struct RecipeDetailContent: View {
         .background(Color(.systemGroupedBackground))
         .safeAreaInset(edge: .bottom) {
             PrimaryActionBar(
-                isEnabled: isUseEnabled,
-                onUse: onUse
+                isEnabled: isBrewEnabled,
+                onBrew: onBrew
             )
         }
     }

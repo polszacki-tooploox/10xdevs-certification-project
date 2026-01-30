@@ -214,10 +214,10 @@ private struct StepPill: View {
 
 // MARK: - Primary Action Bar
 
-/// Bottom-pinned "Use this recipe" button
+/// Bottom-pinned "Brew this recipe" button
 struct PrimaryActionBar: View {
     let isEnabled: Bool
-    let onUse: () -> Void
+    let onBrew: () -> Void
     
     var body: some View {
         VStack(spacing: 8) {
@@ -227,8 +227,8 @@ struct PrimaryActionBar: View {
                     .foregroundStyle(.secondary)
             }
             
-            Button(action: onUse) {
-                Text("Use this recipe")
+            Button(action: onBrew) {
+                Text("Brew this recipe")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
             }
@@ -341,7 +341,7 @@ struct RecipeDetailToolbarActions: View {
 #Preview("Action Bar") {
     VStack {
         Spacer()
-        PrimaryActionBar(isEnabled: true, onUse: {})
-        PrimaryActionBar(isEnabled: false, onUse: {})
+        PrimaryActionBar(isEnabled: true, onBrew: {})
+        PrimaryActionBar(isEnabled: false, onBrew: {})
     }
 }

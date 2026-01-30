@@ -28,11 +28,16 @@ final class AppRootCoordinator {
     // MARK: - Modal Presentations
     
     var activeBrewSession: BrewSessionPresentation?
+    var activeConfirmInputs: ConfirmInputsPresentation?
     
     // MARK: - Computed Properties
     
     var isBrewSessionActive: Bool {
         activeBrewSession != nil
+    }
+    
+    var isConfirmInputsActive: Bool {
+        activeConfirmInputs != nil
     }
     
     // MARK: - Navigation Methods
@@ -77,5 +82,30 @@ final class AppRootCoordinator {
         
         activeBrewSession = nil
         logger.info("Brew session dismissed.")
+    }
+    
+    // MARK: - Confirm Inputs Modal Presentation
+    
+    /// Presents the confirm inputs modal with the given recipe ID.
+    /// Guards against re-entrancy: if already active, logs and ignores the request.
+    func presentConfirmInputs(recipeId: UUID) {
+        guard activeConfirmInputs == nil else {
+            logger.warning("Attempted to present confirm inputs while one is already active. Ignoring.")
+            return
+        }
+        
+        activeConfirmInputs = ConfirmInputsPresentation(recipeId: recipeId)
+        logger.info("Confirm inputs presented for recipe: \(recipeId)")
+    }
+    
+    /// Dismisses the current confirm inputs modal.
+    func dismissConfirmInputs() {
+        guard activeConfirmInputs != nil else {
+            logger.debug("Attempted to dismiss confirm inputs when none is active.")
+            return
+        }
+        
+        activeConfirmInputs = nil
+        logger.info("Confirm inputs dismissed.")
     }
 }

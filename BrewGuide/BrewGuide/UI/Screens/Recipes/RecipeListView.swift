@@ -85,10 +85,8 @@ private struct RecipeListLoadedView: View {
                     onTapRecipe: { id in
                         coordinator.recipesPath.append(RecipesRoute.recipeDetail(id: id))
                     },
-                    onUseRecipe: { id in
-                        viewModel.useRecipe(id: id)
-                        // Return to ConfirmInputsView
-                        dismiss()
+                    onBrewRecipe: { id in
+                        coordinator.presentConfirmInputs(recipeId: id)
                     },
                     onRequestDelete: { id in
                         if let recipe = viewModel.sections.all.first(where: { $0.id == id }) {
@@ -126,7 +124,7 @@ private struct RecipeListLoadedView: View {
 private struct RecipeListContent: View {
     let sections: RecipeListSections
     let onTapRecipe: (UUID) -> Void
-    let onUseRecipe: (UUID) -> Void
+    let onBrewRecipe: (UUID) -> Void
     let onRequestDelete: (UUID) -> Void
     
     var body: some View {
@@ -137,7 +135,7 @@ private struct RecipeListContent: View {
                         RecipeListRow(
                             recipe: recipe,
                             onTap: { onTapRecipe(recipe.id) },
-                            onUse: { onUseRecipe(recipe.id) },
+                            onBrew: { onBrewRecipe(recipe.id) },
                             onRequestDelete: nil // Starter recipes cannot be deleted
                         )
                     }
@@ -150,7 +148,7 @@ private struct RecipeListContent: View {
                         RecipeListRow(
                             recipe: recipe,
                             onTap: { onTapRecipe(recipe.id) },
-                            onUse: { onUseRecipe(recipe.id) },
+                            onBrew: { onBrewRecipe(recipe.id) },
                             onRequestDelete: { onRequestDelete(recipe.id) }
                         )
                     }

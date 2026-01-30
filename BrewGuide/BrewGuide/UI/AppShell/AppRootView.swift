@@ -33,6 +33,10 @@ struct AppRootView: View {
             BrewSessionFlowView(presentation: presentation)
                 .environment(coordinator)
         }
+        .fullScreenCover(item: $coordinator.activeConfirmInputs) { presentation in
+            ConfirmInputsFlowView(presentation: presentation)
+                .environment(coordinator)
+        }
     }
 }
 

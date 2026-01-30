@@ -12,7 +12,7 @@ import SwiftUI
 struct RecipeListRow: View {
     let recipe: RecipeSummaryDTO
     let onTap: () -> Void
-    let onUse: () -> Void
+    let onBrew: () -> Void
     let onRequestDelete: (() -> Void)?
     
     var body: some View {
@@ -51,12 +51,12 @@ struct RecipeListRow: View {
         .accessibilityHint("Double tap to view recipe details")
         .swipeActions(edge: .leading) {
             Button {
-                onUse()
+                onBrew()
             } label: {
-                Label("Use", systemImage: "checkmark.circle.fill")
+                Label("Brew", systemImage: "cup.and.saucer.fill")
             }
-            .tint(.green)
-            .accessibilityLabel("Use this recipe for brewing")
+            .tint(.blue)
+            .accessibilityLabel("Brew with this recipe")
         }
         .swipeActions(edge: .trailing) {
             if let onRequestDelete = onRequestDelete {
@@ -115,7 +115,7 @@ struct RecipeListRow: View {
                     defaultGrindLabel: .medium
                 ),
                 onTap: {},
-                onUse: {},
+                onBrew: {},
                 onRequestDelete: nil
             )
         }
@@ -135,7 +135,7 @@ struct RecipeListRow: View {
                     defaultGrindLabel: .fine
                 ),
                 onTap: {},
-                onUse: {},
+                onBrew: {},
                 onRequestDelete: {}
             )
             
@@ -153,7 +153,7 @@ struct RecipeListRow: View {
                     defaultGrindLabel: .medium
                 ),
                 onTap: {},
-                onUse: {},
+                onBrew: {},
                 onRequestDelete: {}
             )
         }
