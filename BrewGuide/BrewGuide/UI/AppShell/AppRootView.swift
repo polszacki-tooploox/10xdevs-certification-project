@@ -153,23 +153,6 @@ private struct LogDetailNavigationView: View {
 }
 
 /// Placeholder view for recipe editing (to be implemented).
-private struct RecipeEditView: View {
-    let recipeId: UUID
-    
-    var body: some View {
-        VStack {
-            Text("Edit Recipe")
-                .font(.title)
-            Text("Recipe ID: \(recipeId.uuidString)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("TODO: Implement recipe edit view")
-                .foregroundStyle(.tertiary)
-        }
-        .navigationTitle("Edit Recipe")
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
