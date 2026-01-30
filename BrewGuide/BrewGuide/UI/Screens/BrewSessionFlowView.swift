@@ -133,7 +133,9 @@ struct BrewSessionFlowView: View {
             stepId: UUID(),
             orderIndex: 0,
             instructionText: "Pour 50g water in circular motion for bloom",
-            timerDurationSeconds: 30,
+            stepKind: .bloom,
+            durationSeconds: 30,
+            targetElapsedSeconds: nil,
             waterAmountGrams: 50,
             isCumulativeWaterTarget: false
         ),
@@ -141,7 +143,9 @@ struct BrewSessionFlowView: View {
             stepId: UUID(),
             orderIndex: 1,
             instructionText: "Pour to 150g total",
-            timerDurationSeconds: 45,
+            stepKind: .pour,
+            durationSeconds: nil,
+            targetElapsedSeconds: 45,
             waterAmountGrams: 150,
             isCumulativeWaterTarget: true
         ),
@@ -149,7 +153,9 @@ struct BrewSessionFlowView: View {
             stepId: UUID(),
             orderIndex: 2,
             instructionText: "Pour remaining water to 250g",
-            timerDurationSeconds: nil,
+            stepKind: .pour,
+            durationSeconds: nil,
+            targetElapsedSeconds: nil,
             waterAmountGrams: 250,
             isCumulativeWaterTarget: true
         )
@@ -158,7 +164,7 @@ struct BrewSessionFlowView: View {
     let testPlan = BrewPlan(inputs: testInputs, scaledSteps: testSteps)
     let presentation = BrewSessionPresentation(plan: testPlan)
     
-    return BrewSessionFlowView(presentation: presentation)
+    BrewSessionFlowView(presentation: presentation)
         .environment(AppRootCoordinator())
         .modelContainer(PersistenceController.preview.container)
 }
@@ -180,7 +186,9 @@ struct BrewSessionFlowView: View {
             stepId: UUID(),
             orderIndex: 0,
             instructionText: "Pour 50g water in circular motion for bloom",
-            timerDurationSeconds: 30,
+            stepKind: .bloom,
+            durationSeconds: 30,
+            targetElapsedSeconds: nil,
             waterAmountGrams: 50,
             isCumulativeWaterTarget: false
         ),
@@ -188,7 +196,9 @@ struct BrewSessionFlowView: View {
             stepId: UUID(),
             orderIndex: 1,
             instructionText: "Pour to 150g total",
-            timerDurationSeconds: 45,
+            stepKind: .pour,
+            durationSeconds: nil,
+            targetElapsedSeconds: 45,
             waterAmountGrams: 150,
             isCumulativeWaterTarget: true
         ),
@@ -196,7 +206,9 @@ struct BrewSessionFlowView: View {
             stepId: UUID(),
             orderIndex: 2,
             instructionText: "Pour remaining water to 250g",
-            timerDurationSeconds: nil,
+            stepKind: .pour,
+            durationSeconds: nil,
+            targetElapsedSeconds: nil,
             waterAmountGrams: 250,
             isCumulativeWaterTarget: true
         )
@@ -205,7 +217,7 @@ struct BrewSessionFlowView: View {
     let testPlan = BrewPlan(inputs: testInputs, scaledSteps: testSteps)
     let presentation = BrewSessionPresentation(plan: testPlan)
     
-    return BrewSessionFlowView(presentation: presentation)
+    BrewSessionFlowView(presentation: presentation)
         .environment(AppRootCoordinator())
         .modelContainer(PersistenceController.preview.container)
 }

@@ -288,7 +288,9 @@ struct BrewSessionContent: View {
             stepId: UUID(),
             orderIndex: 0,
             instructionText: "Pour water in a circular motion for bloom",
-            timerDurationSeconds: 30,
+            stepKind: .bloom,
+            durationSeconds: 30,
+            targetElapsedSeconds: nil,
             waterAmountGrams: 50,
             isCumulativeWaterTarget: false
         ),

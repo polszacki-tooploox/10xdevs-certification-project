@@ -109,12 +109,36 @@ final class BrewSessionFlowViewModel {
             waterLine = "\(waterFormatted) \(label)"
         }
         
-        // Format countdown text
+        // Format countdown text (per-step timer)
         var countdownText: String?
         if let remaining = state.remainingTime {
             let minutes = Int(remaining) / 60
             let seconds = Int(remaining) % 60
             countdownText = String(format: "%d:%02d", minutes, seconds)
+        }
+        
+        // Format elapsed time (total brew clock)
+        var elapsedText: String?
+        if let elapsed = state.elapsedTime {
+            let minutes = Int(elapsed) / 60
+            let seconds = Int(elapsed) % 60
+            elapsedText = String(format: "%d:%02d", minutes, seconds)
+        }
+        
+        // Compute pacing indicator for pour steps
+        var pacingIndicator: PacingIndicator?
+        if let step = currentStep,
+           step.stepKind == .pour,
+           let targetElapsed = step.targetElapsedSeconds,
+           let elapsed = state.elapsedTime {
+            let timeRemaining = targetElapsed - elapsed
+            if timeRemaining < -10 {
+                pacingIndicator = .behind
+            } else if timeRemaining > 30 {
+                pacingIndicator = .ahead
+            } else {
+                pacingIndicator = .onPace
+            }
         }
         
         let isTimerVisible = currentStep?.timerDurationSeconds != nil
@@ -128,10 +152,12 @@ final class BrewSessionFlowViewModel {
             instructionText: instructionText,
             waterLine: waterLine,
             countdownText: countdownText,
+            elapsedText: elapsedText,
             isTimerVisible: isTimerVisible,
             isReadyToAdvance: isReadyToAdvance,
             primaryNextLabel: primaryNextLabel,
-            primaryPauseResumeLabel: primaryPauseResumeLabel
+            primaryPauseResumeLabel: primaryPauseResumeLabel,
+            pacingIndicator: pacingIndicator
         )
     }
     
@@ -165,21 +191,46 @@ final class BrewSessionFlowViewModel {
         guard state.phase == .notStarted else { return }
         guard let step = currentStep else { return }
         
-        // Check if step has a timer
-        guard let duration = step.timerDurationSeconds, duration > 0 else {
+        switch step.stepKind {
+        case .preparation:
             // No timer - ready to advance immediately
             state.phase = .stepReadyToAdvance
-            logger.debug("Step \(self.state.currentStepIndex + 1) has no timer - ready immediately")
-            return
+            logger.debug("Preparation step - ready immediately")
+            
+        case .bloom:
+            // Show "Pour now" prompt, timer starts after user confirms pour
+            state.phase = .awaitingPourConfirmation
+            logger.debug("Bloom step - awaiting pour confirmation")
+            
+        case .pour:
+            // Show elapsed time vs milestone, user confirms when target reached
+            if state.startedAt == nil {
+                state.startedAt = Date()
+                logger.debug("Starting brew clock on first pour step")
+            }
+            state.phase = .active
+            logger.debug("Pour step - tracking elapsed time to milestone \(step.targetElapsedSeconds ?? 0)")
+            
+        case .wait:
+            // Auto-start countdown
+            if let duration = step.durationSeconds {
+                state.remainingTime = duration
+                if state.startedAt == nil {
+                    state.startedAt = Date()
+                    logger.debug("Starting brew clock on wait step")
+                }
+                state.phase = .active
+                startTimerLoop()
+                logger.debug("Wait step - starting countdown for \(duration)s")
+            } else {
+                state.phase = .stepReadyToAdvance
+            }
+            
+        case .agitate:
+            // Brief action - ready to advance immediately
+            state.phase = .stepReadyToAdvance
+            logger.debug("Agitate step - ready immediately")
         }
-        
-        // Start timer
-        state.remainingTime = duration
-        state.phase = .active
-        state.startedAt = Date()
-        
-        logger.info("Starting timer for step \(self.state.currentStepIndex + 1): \(duration)s")
-        startTimerLoop()
     }
     
     /// Toggle between pause and resume
@@ -212,6 +263,28 @@ final class BrewSessionFlowViewModel {
             
             // Auto-start next step
             startStepIfNeeded()
+        }
+    }
+    
+    /// Called when user confirms bloom pour is complete - starts bloom wait timer
+    func confirmBloomPourComplete() {
+        guard state.phase == .awaitingPourConfirmation else { return }
+        guard let step = currentStep, step.stepKind == .bloom else { return }
+        
+        // Start brew clock if not already started
+        if state.startedAt == nil {
+            state.startedAt = Date()
+            logger.debug("Starting brew clock on bloom pour confirmation")
+        }
+        
+        // Start bloom wait timer
+        if let duration = step.durationSeconds {
+            state.remainingTime = duration
+            state.phase = .active
+            startTimerLoop()
+            logger.info("Bloom timer started: \(duration)s")
+        } else {
+            state.phase = .stepReadyToAdvance
         }
     }
     
@@ -351,11 +424,24 @@ struct BrewSessionFlowUIState {
     let stepTitle: String
     let instructionText: String
     let waterLine: String?
-    let countdownText: String?
+    
+    // Timer display
+    let countdownText: String?           // Per-step countdown (MM:SS)
+    let elapsedText: String?             // Total brew time (MM:SS)
+    
     let isTimerVisible: Bool
     let isReadyToAdvance: Bool
     let primaryNextLabel: String
     let primaryPauseResumeLabel: String
+    
+    // Pacing indicator for pour steps
+    let pacingIndicator: PacingIndicator?
+}
+
+enum PacingIndicator {
+    case onPace
+    case ahead
+    case behind
 }
 
 // MARK: - Error Banner

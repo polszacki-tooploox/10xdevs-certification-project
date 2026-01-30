@@ -70,12 +70,16 @@ final class ScalingService {
     // MARK: - V60 Water Target Computation
     
     /// Computes V60-specific cumulative water targets per PRD.
-    /// - Bloom = 3× dose
+    /// - Bloom = bloomRatio × dose (configurable, default 3×)
     /// - Remaining split 50/50 into two pours
     /// - Final pour adjusted so last target == yield
-    private func computeV60WaterTargets(dose: Double, targetYield: Double) -> [Double] {
+    private func computeV60WaterTargets(
+        dose: Double,
+        targetYield: Double,
+        bloomRatio: Double = 3.0
+    ) -> [Double] {
         // Bloom water
-        let bloom = roundWater(3.0 * dose)
+        let bloom = roundWater(bloomRatio * dose)
         
         // Remaining water after bloom
         let remaining = max(0, targetYield - bloom)

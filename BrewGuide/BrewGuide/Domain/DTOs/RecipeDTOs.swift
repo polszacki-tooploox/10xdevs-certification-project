@@ -45,6 +45,9 @@ struct RecipeStepDTO: Codable, Identifiable, Hashable {
     let stepId: UUID
     let orderIndex: Int
     let instructionText: String
+    let stepKind: StepKind
+    let durationSeconds: Double?
+    let targetElapsedSeconds: Double?
     let timerDurationSeconds: Double?
     let waterAmountGrams: Double?
     let isCumulativeWaterTarget: Bool

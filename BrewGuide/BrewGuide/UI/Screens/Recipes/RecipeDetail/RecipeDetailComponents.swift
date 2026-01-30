@@ -330,7 +330,10 @@ struct RecipeDetailToolbarActions: View {
             stepId: UUID(),
             orderIndex: 0,
             instructionText: "Pour 50g water in circular motion to bloom",
-            timerDurationSeconds: 30,
+            stepKind: .bloom,
+            durationSeconds: 30,
+            targetElapsedSeconds: nil,
+            timerDurationSeconds: nil,
             waterAmountGrams: 50,
             isCumulativeWaterTarget: true
         )

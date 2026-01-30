@@ -73,6 +73,9 @@ final class RecipeUseCase: RecipeUseCaseProtocol {
                     stepId: dto.stepId,
                     orderIndex: index,
                     instructionText: dto.instructionText,
+                    stepKind: dto.stepKind,
+                    durationSeconds: dto.durationSeconds,
+                    targetElapsedSeconds: dto.targetElapsedSeconds,
                     timerDurationSeconds: dto.timerDurationSeconds,
                     waterAmountGrams: dto.waterAmountGrams,
                     isCumulativeWaterTarget: dto.isCumulativeWaterTarget

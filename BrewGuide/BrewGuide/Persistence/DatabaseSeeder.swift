@@ -65,7 +65,8 @@ final class DatabaseSeeder {
             defaultTargetYield: 250.0,
             defaultWaterTemperature: 94.0,
             defaultGrindLabel: .medium,
-            grindTactileDescriptor: "sand; slightly finer than sea salt"
+            grindTactileDescriptor: "sand; slightly finer than sea salt",
+            bloomRatio: 3.0
         )
     }
     
@@ -81,7 +82,8 @@ final class DatabaseSeeder {
             defaultTargetYield: 250.0,
             defaultWaterTemperature: 96.0,
             defaultGrindLabel: .medium,
-            grindTactileDescriptor: "fine sand; slightly finer than table salt"
+            grindTactileDescriptor: "fine sand; slightly finer than table salt",
+            bloomRatio: 3.3
         )
     }
     
@@ -97,7 +99,8 @@ final class DatabaseSeeder {
             defaultTargetYield: 270.0,
             defaultWaterTemperature: 92.0,
             defaultGrindLabel: .medium,
-            grindTactileDescriptor: "coarse sand; similar to sea salt"
+            grindTactileDescriptor: "coarse sand; similar to sea salt",
+            bloomRatio: 3.0
         )
     }
     
@@ -123,7 +126,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 0,
                 instructionText: "Rinse filter and preheat",
-                timerDurationSeconds: nil,
+                stepKind: .preparation,
+                durationSeconds: nil,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -131,7 +136,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 1,
                 instructionText: "Add coffee, level bed",
-                timerDurationSeconds: nil,
+                stepKind: .preparation,
+                durationSeconds: nil,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -139,7 +146,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 2,
                 instructionText: "Bloom: pour 45g, start timer",
-                timerDurationSeconds: 45,
+                stepKind: .bloom,
+                durationSeconds: 45,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: 45,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -147,7 +156,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 3,
                 instructionText: "Pour to 150g by 1:30",
-                timerDurationSeconds: 90,
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 90,
                 waterAmountGrams: 150,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -155,7 +166,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 4,
                 instructionText: "Pour to 250g by 2:15",
-                timerDurationSeconds: 135,
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 135,
                 waterAmountGrams: 250,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -163,7 +176,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 5,
                 instructionText: "Wait for drawdown, target finish 3:00–3:30",
-                timerDurationSeconds: 180,
+                stepKind: .wait,
+                durationSeconds: 180,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -177,7 +192,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 0,
                 instructionText: "Rinse filter with hot water",
-                timerDurationSeconds: nil,
+                stepKind: .preparation,
+                durationSeconds: nil,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -185,7 +202,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 1,
                 instructionText: "Add coffee, create small well in center",
-                timerDurationSeconds: nil,
+                stepKind: .preparation,
+                durationSeconds: nil,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -193,7 +212,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 2,
                 instructionText: "Bloom: pour 50g in gentle spiral, start timer",
-                timerDurationSeconds: 50,
+                stepKind: .bloom,
+                durationSeconds: 50,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: 50,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -201,7 +222,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 3,
                 instructionText: "Pour to 125g by 1:20",
-                timerDurationSeconds: 80,
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 80,
                 waterAmountGrams: 125,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -209,7 +232,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 4,
                 instructionText: "Pour to 200g by 2:00",
-                timerDurationSeconds: 120,
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 120,
                 waterAmountGrams: 200,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -217,7 +242,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 5,
                 instructionText: "Pour to 250g by 2:30",
-                timerDurationSeconds: 150,
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 150,
                 waterAmountGrams: 250,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -225,7 +252,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 6,
                 instructionText: "Wait for drawdown, target finish 3:30–4:00",
-                timerDurationSeconds: 210,
+                stepKind: .wait,
+                durationSeconds: 210,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -239,7 +268,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 0,
                 instructionText: "Rinse filter and preheat",
-                timerDurationSeconds: nil,
+                stepKind: .preparation,
+                durationSeconds: nil,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -247,7 +278,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 1,
                 instructionText: "Add coffee, tap to level",
-                timerDurationSeconds: nil,
+                stepKind: .preparation,
+                durationSeconds: nil,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -255,7 +288,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 2,
                 instructionText: "Bloom: pour 54g (3× dose), start timer",
-                timerDurationSeconds: 45,
+                stepKind: .bloom,
+                durationSeconds: 45,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: 54,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -263,7 +298,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 3,
                 instructionText: "Pour to 180g by 1:30",
-                timerDurationSeconds: 90,
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 90,
                 waterAmountGrams: 180,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -271,7 +308,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 4,
                 instructionText: "Pour to 270g by 2:00",
-                timerDurationSeconds: 120,
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 120,
                 waterAmountGrams: 270,
                 isCumulativeWaterTarget: true,
                 recipe: recipe
@@ -279,7 +318,9 @@ final class DatabaseSeeder {
             RecipeStep(
                 orderIndex: 5,
                 instructionText: "Wait for drawdown, target finish 2:45–3:15",
-                timerDurationSeconds: 165,
+                stepKind: .wait,
+                durationSeconds: 165,
+                targetElapsedSeconds: nil,
                 waterAmountGrams: nil,
                 isCumulativeWaterTarget: true,
                 recipe: recipe

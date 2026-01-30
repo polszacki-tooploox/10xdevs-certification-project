@@ -34,6 +34,9 @@ struct RecipeStepDraft: Equatable, Identifiable, Sendable {
     let id: UUID
     var orderIndex: Int
     var instructionText: String
+    var stepKind: StepKind
+    var durationSeconds: Double?
+    var targetElapsedSeconds: Double?
     var timerDurationSeconds: Double?
     var waterAmountGrams: Double?
     var isCumulativeWaterTarget: Bool

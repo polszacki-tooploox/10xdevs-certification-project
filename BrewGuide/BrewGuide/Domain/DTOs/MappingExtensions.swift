@@ -45,6 +45,9 @@ extension RecipeStep {
             stepId: stepId,
             orderIndex: orderIndex,
             instructionText: instructionText,
+            stepKind: stepKind,
+            durationSeconds: durationSeconds,
+            targetElapsedSeconds: targetElapsedSeconds,
             timerDurationSeconds: timerDurationSeconds,
             waterAmountGrams: waterAmountGrams,
             isCumulativeWaterTarget: isCumulativeWaterTarget
@@ -123,6 +126,9 @@ extension RecipeStep {
             stepId: dto.stepId,
             orderIndex: dto.orderIndex,
             instructionText: dto.instructionText,
+            stepKind: dto.stepKind,
+            durationSeconds: dto.durationSeconds,
+            targetElapsedSeconds: dto.targetElapsedSeconds,
             timerDurationSeconds: dto.timerDurationSeconds,
             waterAmountGrams: dto.waterAmountGrams,
             isCumulativeWaterTarget: dto.isCumulativeWaterTarget,
@@ -179,7 +185,9 @@ extension RecipeStepDTO {
             stepId: stepId,
             orderIndex: orderIndex,
             instructionText: instructionText,
-            timerDurationSeconds: timerDurationSeconds,
+            stepKind: stepKind,
+            durationSeconds: durationSeconds,
+            targetElapsedSeconds: targetElapsedSeconds,
             waterAmountGrams: scaledWaterAmount,
             isCumulativeWaterTarget: isCumulativeWaterTarget
         )

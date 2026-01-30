@@ -63,6 +63,9 @@ final class RecipeEditViewModel {
                             id: step.stepId,
                             orderIndex: index,
                             instructionText: step.instructionText,
+                            stepKind: step.stepKind,
+                            durationSeconds: step.durationSeconds,
+                            targetElapsedSeconds: step.targetElapsedSeconds,
                             timerDurationSeconds: step.timerDurationSeconds,
                             waterAmountGrams: step.waterAmountGrams,
                             isCumulativeWaterTarget: step.isCumulativeWaterTarget
@@ -118,6 +121,9 @@ final class RecipeEditViewModel {
                     id: UUID(),
                     orderIndex: draft.steps.count,
                     instructionText: "",
+                    stepKind: .pour,
+                    durationSeconds: nil,
+                    targetElapsedSeconds: nil,
                     timerDurationSeconds: nil,
                     waterAmountGrams: nil,
                     isCumulativeWaterTarget: true
@@ -209,6 +215,9 @@ final class RecipeEditViewModel {
                     stepId: step.id,
                     orderIndex: index,
                     instructionText: step.instructionText,
+                    stepKind: step.stepKind,
+                    durationSeconds: step.durationSeconds,
+                    targetElapsedSeconds: step.targetElapsedSeconds,
                     timerDurationSeconds: step.timerDurationSeconds,
                     waterAmountGrams: step.waterAmountGrams,
                     isCumulativeWaterTarget: step.isCumulativeWaterTarget

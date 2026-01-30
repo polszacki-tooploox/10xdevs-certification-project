@@ -224,14 +224,16 @@ extension TasteTag {
         stepId: UUID(),
         orderIndex: 0,
         instructionText: "Pour water",
-        timerDurationSeconds: 30,
+        stepKind: .pour,
+        durationSeconds: nil,
+        targetElapsedSeconds: 30,
         waterAmountGrams: 50,
         isCumulativeWaterTarget: false
     )
     
     let testPlan = BrewPlan(inputs: testInputs, scaledSteps: [testStep])
     
-    return NavigationStack {
+    NavigationStack {
         PostBrewView(
             plan: testPlan,
             onSave: { _, _, _ in },

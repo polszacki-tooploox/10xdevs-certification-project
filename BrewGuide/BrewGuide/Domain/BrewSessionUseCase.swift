@@ -46,7 +46,9 @@ final class BrewSessionUseCase {
                 stepId: step.stepId,
                 orderIndex: step.orderIndex,
                 instructionText: step.instructionText,
-                timerDurationSeconds: step.timerDurationSeconds,
+                stepKind: step.stepKind,
+                durationSeconds: step.durationSeconds,
+                targetElapsedSeconds: step.targetElapsedSeconds,
                 waterAmountGrams: step.waterAmountGrams.map { $0 * scalingFactor },
                 isCumulativeWaterTarget: step.isCumulativeWaterTarget
             )

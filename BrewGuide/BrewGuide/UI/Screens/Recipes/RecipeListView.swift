@@ -26,14 +26,6 @@ struct RecipeListView: View {
             }
         }
         .navigationTitle("Recipes")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("Add Recipe", systemImage: "plus") {
-                    // TODO: Navigate to recipe creation
-                }
-                .disabled(viewModel?.isLoading ?? true)
-            }
-        }
         .task {
             if viewModel == nil {
                 let repository = RecipeRepository(context: modelContext)

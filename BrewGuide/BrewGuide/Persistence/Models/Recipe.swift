@@ -35,6 +35,10 @@ final class Recipe {
     /// Tactile grind descriptor (e.g., "sand; slightly finer than sea salt")
     var grindTactileDescriptor: String?
     
+    /// Bloom water ratio as multiplier of dose (e.g., 3.0 = 3× dose)
+    /// Default 3.0 for V60 standard bloom
+    var bloomRatio: Double = 3.0
+    
     /// Ordered sequence of recipe steps
     /// CloudKit-compatible: relationship is optional
     var steps: [RecipeStep]?
@@ -61,6 +65,7 @@ final class Recipe {
         defaultWaterTemperature: Double = 94.0,
         defaultGrindLabel: GrindLabel = .medium,
         grindTactileDescriptor: String? = nil,
+        bloomRatio: Double = 3.0,
         steps: [RecipeStep]? = nil,
         createdAt: Date = Date(),
         modifiedAt: Date = Date()
@@ -75,6 +80,7 @@ final class Recipe {
         self.defaultWaterTemperature = defaultWaterTemperature
         self.defaultGrindLabel = defaultGrindLabel
         self.grindTactileDescriptor = grindTactileDescriptor
+        self.bloomRatio = bloomRatio
         self.steps = steps
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt

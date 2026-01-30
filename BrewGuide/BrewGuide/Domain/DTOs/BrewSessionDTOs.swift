@@ -34,13 +34,24 @@ struct ScaledStep: Codable, Identifiable, Hashable {
     let stepId: UUID
     let orderIndex: Int
     let instructionText: String
-    let timerDurationSeconds: Double?
+    let stepKind: StepKind
+    
+    /// Wait duration for bloom/wait steps (seconds)
+    let durationSeconds: Double?
+    
+    /// Target milestone time from brew start for pour steps (seconds)
+    let targetElapsedSeconds: Double?
     
     /// Scaled water amount in grams (rounded to 1g)
     let waterAmountGrams: Double?
     let isCumulativeWaterTarget: Bool
     
     var id: UUID { stepId }
+    
+    /// Computed: legacy compatibility
+    var timerDurationSeconds: Double? {
+        durationSeconds ?? targetElapsedSeconds
+    }
 }
 
 /// Complete brew plan with scaled steps ready for execution.
@@ -71,6 +82,7 @@ struct BrewSessionState: Codable, Hashable {
     
     enum Phase: String, Codable {
         case notStarted
+        case awaitingPourConfirmation   // NEW: Bloom step waiting for pour complete
         case active
         case paused
         case stepReadyToAdvance
@@ -94,5 +106,12 @@ struct BrewSessionState: Codable, Hashable {
     var progress: Double {
         guard !plan.scaledSteps.isEmpty else { return 0 }
         return Double(currentStepIndex + 1) / Double(plan.scaledSteps.count)
+    }
+    
+    /// Total elapsed time since brew started (first timed step began).
+    /// Returns nil if brew hasn't started yet.
+    var elapsedTime: TimeInterval? {
+        guard let startedAt else { return nil }
+        return Date.now.timeIntervalSince(startedAt)
     }
 }
