@@ -209,6 +209,7 @@ struct WarningsSection: View {
                 }
             }
             .padding()
+
             .background(Color.yellow.opacity(0.1))
             .clipShape(.rect(cornerRadius: 12))
             .padding(.horizontal)

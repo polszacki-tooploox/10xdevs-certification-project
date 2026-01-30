@@ -7,7 +7,7 @@ Source of truth: `.ai/ui-plan.md` + `.ai/prd.md`, compared against the current S
 - **Placeholder**: Exists but is explicitly marked TODO / demo-only / missing required MVP behavior.
 - **Missing**: Not present in codebase as a view/screen yet.
 
-Last updated: 2026-01-29
+Last updated: 2026-01-30
 
 ---
 
@@ -45,7 +45,7 @@ Last updated: 2026-01-29
 
 | View | PRD/UI plan | Status | Current location | Notes |
 |---|---:|---|---|---|
-| `LogsListView` | Yes | **Implemented** | `BrewGuide/BrewGuide/UI/Screens/LogsListView.swift` | Logs tab root in `AppRootView`. |
+| `LogsListView` | Yes | **Implemented** (enhanced) | `BrewGuide/BrewGuide/UI/Screens/LogsListView.swift` | Logs tab root with full MVVM architecture, DTO-driven rendering, swipe-to-delete with confirmation, error handling, and pull-to-refresh. Uses `LogsListViewModel` and `BrewLogUseCase`. Includes accessible rating display and taste tag pills. See `LOGS_LIST_IMPLEMENTATION_SUMMARY.md` for details. |
 | `LogDetailView` | Yes | **Implemented** | `BrewGuide/BrewGuide/UI/Screens/LogDetailView.swift` | Displays full log details with delete confirmation and optional recipe navigation. Conforms to PRD US-022 and US-023. |
 
 ---
@@ -61,8 +61,13 @@ Last updated: 2026-01-29
 
 ## Shared UI Components Mentioned in `ui-plan.md` (recommended extraction)
 
-These are described as "conceptual, not implementation commitments", but **do not exist as reusable components yet** (they may be inlined inside screens).
+These are described as "conceptual, not implementation commitments". Some have been implemented as reusable components:
 
+**Implemented:**
+- `BrewLogRatingView` - Accessible star rating display (1-5 stars)
+- `TasteTagPill` - Compact taste tag indicator pill
+
+**Not yet implemented:**
 - `PrimaryActionButton`
 - `InlineErrorText` / `FieldErrorState`
 - `ValidationSummaryBanner`

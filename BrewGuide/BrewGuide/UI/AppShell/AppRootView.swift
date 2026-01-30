@@ -118,17 +118,37 @@ private struct RecipeDetailNavigationView: View {
 private struct LogDetailNavigationView: View {
     let logId: UUID
     @Environment(\.modelContext) private var modelContext
+    @State private var log: BrewLog?
+    @State private var isLoading = true
     
     var body: some View {
-        EmptyView()
-        // TODO: IMPLEMENT
+        Group {
+            if isLoading {
+                ProgressView("Loading...")
+            } else if let log = log {
+                LogDetailView(log: log)
+            } else {
+                ContentUnavailableView(
+                    "Log Not Found",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text("This brew log may have been deleted.")
+                )
+            }
+        }
+        .task {
+            await loadLog()
+        }
     }
     
-    private func fetchLog() -> BrewLog? {
-        let descriptor = FetchDescriptor<BrewLog>(
-            predicate: #Predicate { $0.id == logId }
-        )
-        return try? modelContext.fetch(descriptor).first
+    private func loadLog() async {
+        let repository = BrewLogRepository(context: modelContext)
+        do {
+            log = try repository.fetchLog(byId: logId)
+        } catch {
+            // Log error but show "not found" UI
+            log = nil
+        }
+        isLoading = false
     }
 }
 
