@@ -8,33 +8,40 @@
 import SwiftUI
 
 /// Root view for the Settings tab.
-/// Provides access to preferences, account settings, and data management.
+/// Owns view model lifecycle, wires dependencies, and renders SettingsScreen.
 struct SettingsView: View {
+    @State private var viewModel = SettingsViewModel()
+    
     var body: some View {
-        List {
-            Section("Account") {
-                Button("Sign In") {
-                    // TODO: Implement sign-in flow
-                }
+        SettingsScreen(
+            state: viewModel.ui,
+            onEvent: handleEvent
+        )
+        .task {
+            await viewModel.onAppear()
+        }
+    }
+    
+    private func handleEvent(_ event: SettingsEvent) {
+        Task {
+            switch event {
+            case .signInTapped:
+                await viewModel.signIn()
                 
-                Button("Sync Status") {
-                    // TODO: Navigate to sync status screen
-                }
-            }
-            
-            Section("Data") {
-                NavigationLink(value: SettingsRoute.dataDeletionRequest) {
-                    Label("Request Data Deletion", systemImage: "trash")
-                        .foregroundStyle(.red)
-                }
-            }
-            
-            Section("About") {
-                LabeledContent("Version", value: "1.0.0")
-                LabeledContent("Build", value: "1")
+            case .signOutTapped:
+                await viewModel.signOut()
+                
+            case .syncToggleChanged(let enabled):
+                await viewModel.setSyncEnabled(enabled)
+                
+            case .retrySyncTapped:
+                await viewModel.retrySync()
+                
+            case .dataDeletionTapped:
+                // Navigation is handled by NavigationLink in DataDeletionEntryRow
+                break
             }
         }
-        .navigationTitle("Settings")
     }
 }
 
