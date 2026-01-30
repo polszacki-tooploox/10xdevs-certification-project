@@ -7,31 +7,31 @@ import SwiftData
 @Model
 final class BrewLog {
     /// Stable identifier
-    var id: UUID
+    var id: UUID = UUID()
     
     /// Timestamp when brew was completed
-    var timestamp: Date
+    var timestamp: Date = Date()
     
     /// Brew method used
-    var method: BrewMethod
-    
+    var method: BrewMethod = BrewMethod.v60
+
     /// Name of the recipe at brew time (snapshot)
-    var recipeNameAtBrew: String
+    var recipeNameAtBrew: String = ""
     
     /// Coffee dose in grams (snapshot)
-    var doseGrams: Double
+    var doseGrams: Double = 0.0
     
     /// Target yield in grams (snapshot)
-    var targetYieldGrams: Double
+    var targetYieldGrams: Double = 0.0
     
     /// Water temperature in Celsius (snapshot)
-    var waterTemperatureCelsius: Double
+    var waterTemperatureCelsius: Double = 0.0
     
     /// Grind label used (snapshot)
-    var grindLabel: GrindLabel
+    var grindLabel: GrindLabel = GrindLabel.medium
     
     /// User rating (1-5, required)
-    var rating: Int
+    var rating: Int = 3
     
     /// Optional quick taste feedback tag
     var tasteTag: TasteTag?
@@ -40,7 +40,7 @@ final class BrewLog {
     var note: String?
     
     /// Optional reference to the recipe used (for navigation; may be nil if recipe was deleted)
-    /// CloudKit-compatible: relationship is optional
+    /// CloudKit-compatible: relationship is optional with inverse
     var recipe: Recipe?
     
     /// Initializer for creating new brew logs

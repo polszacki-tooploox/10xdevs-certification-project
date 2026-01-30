@@ -6,13 +6,13 @@ import SwiftData
 @Model
 final class RecipeStep {
     /// Stable identifier for this step
-    var stepId: UUID
+    var stepId: UUID = UUID()
     
     /// Position in the recipe's step sequence (0-based)
-    var orderIndex: Int
+    var orderIndex: Int = 0
     
     /// Human-readable instruction text
-    var instructionText: String
+    var instructionText: String = ""
     
     /// Duration in seconds for timed steps (nil if not timed)
     var timerDurationSeconds: Double?
@@ -21,10 +21,11 @@ final class RecipeStep {
     var waterAmountGrams: Double?
     
     /// Whether this is a cumulative water target (e.g., "pour to 150g") vs incremental
-    var isCumulativeWaterTarget: Bool
+    var isCumulativeWaterTarget: Bool = true
     
     /// Parent recipe
-    /// CloudKit-compatible: relationship is optional
+    /// CloudKit-compatible: relationship is optional with inverse
+    @Relationship(inverse: \Recipe.steps)
     var recipe: Recipe?
     
     /// Initializer for creating new recipe steps

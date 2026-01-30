@@ -6,45 +6,48 @@ import SwiftData
 @Model
 final class Recipe {
     /// Stable identifier
-    var id: UUID
+    var id: UUID = UUID()
     
     /// Whether this is a built-in starter recipe
-    var isStarter: Bool
+    var isStarter: Bool = false
     
     /// Origin/type of recipe
-    var origin: RecipeOrigin
+    var origin: RecipeOrigin = RecipeOrigin.custom
     
     /// Brew method (V60 only in MVP)
-    var method: BrewMethod
-    
+    var method: BrewMethod = BrewMethod.v60
+
     /// Recipe name
-    var name: String
+    var name: String = ""
     
     /// Default coffee dose in grams
-    var defaultDose: Double
+    var defaultDose: Double = 15.0
     
     /// Default target yield in grams
-    var defaultTargetYield: Double
+    var defaultTargetYield: Double = 250.0
     
     /// Default water temperature in Celsius
-    var defaultWaterTemperature: Double
+    var defaultWaterTemperature: Double = 94.0
     
     /// Default grind size label
-    var defaultGrindLabel: GrindLabel
-    
+    var defaultGrindLabel: GrindLabel = GrindLabel.medium
+
     /// Tactile grind descriptor (e.g., "sand; slightly finer than sea salt")
     var grindTactileDescriptor: String?
     
     /// Ordered sequence of recipe steps
     /// CloudKit-compatible: relationship is optional
-    @Relationship(deleteRule: .cascade, inverse: \RecipeStep.recipe)
     var steps: [RecipeStep]?
     
+    /// Brew logs that reference this recipe
+    /// CloudKit-compatible: relationship is optional with inverse
+    var brewLogs: [BrewLog]?
+    
     /// Timestamp when recipe was created
-    var createdAt: Date
+    var createdAt: Date = Date()
     
     /// Timestamp when recipe was last modified
-    var modifiedAt: Date
+    var modifiedAt: Date = Date()
     
     /// Initializer for creating new recipes
     init(
