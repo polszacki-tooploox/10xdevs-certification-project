@@ -24,9 +24,6 @@ final class BrewSessionFlowViewModel {
     /// Show exit confirmation dialog
     var showExitConfirmation = false
     
-    /// Show restart confirmation dialog (optional second confirmation after hold)
-    var showRestartConfirmation = false
-    
     /// Error banner for non-blocking failures
     var errorBanner: BrewSessionFlowErrorBanner?
     
@@ -35,11 +32,14 @@ final class BrewSessionFlowViewModel {
     
     // MARK: - Private State
     
-    /// Active timer task (cancelled on pause, next, restart, exit)
+    /// Active timer task (cancelled on next, exit, completion)
     private var timerTask: Task<Void, Never>?
     
     /// Clock for timer tick control (injectable for testing)
     private let clock: any Clock<Duration>
+    
+    /// Tick counter to force UI updates for elapsed time
+    private var tickCount: Int = 0
     
     // MARK: - Initialization
     
@@ -48,7 +48,6 @@ final class BrewSessionFlowViewModel {
             plan: plan,
             phase: .notStarted,
             currentStepIndex: 0,
-            remainingTime: nil,
             startedAt: nil,
             isInputsLocked: true
         )
@@ -70,34 +69,15 @@ final class BrewSessionFlowViewModel {
     }
     
     var isNextEnabled: Bool {
-        // Next is enabled if:
-        // 1. Step has no timer (untimed step)
-        // 2. Timer has reached 0 (stepReadyToAdvance phase)
-        guard let step = currentStep else { return false }
-        
-        if step.timerDurationSeconds == nil {
-            return true
-        }
-        
-        return state.phase == .stepReadyToAdvance
-    }
-    
-    var isPauseResumeEnabled: Bool {
-        // Pause/Resume is enabled only for timed steps
-        guard let step = currentStep,
-              step.timerDurationSeconds != nil else {
-            return false
-        }
-        
-        return state.phase == .active || state.phase == .paused
-    }
-    
-    var timerDuration: TimeInterval? {
-        currentStep?.timerDurationSeconds
+        // Next is always enabled (no countdown timer to wait for)
+        currentStep != nil
     }
     
     /// Pre-formatted UI state for declarative rendering
     var ui: BrewSessionFlowUIState {
+        // Force re-computation when tickCount changes (triggers SwiftUI re-render)
+        _ = tickCount
+        
         let stepTitle = "Step \(state.currentStepIndex + 1) of \(stepCount)"
         let instructionText = currentStep?.instructionText ?? ""
         
@@ -107,14 +87,6 @@ final class BrewSessionFlowViewModel {
             let waterFormatted = String(format: "%.0f g", water)
             let label = step.isCumulativeWaterTarget ? "total" : "pour"
             waterLine = "\(waterFormatted) \(label)"
-        }
-        
-        // Format countdown text (per-step timer)
-        var countdownText: String?
-        if let remaining = state.remainingTime {
-            let minutes = Int(remaining) / 60
-            let seconds = Int(remaining) % 60
-            countdownText = String(format: "%d:%02d", minutes, seconds)
         }
         
         // Format elapsed time (total brew clock)
@@ -141,22 +113,14 @@ final class BrewSessionFlowViewModel {
             }
         }
         
-        let isTimerVisible = currentStep?.timerDurationSeconds != nil
-        let isReadyToAdvance = state.phase == .stepReadyToAdvance
-        
         let primaryNextLabel = state.isLastStep ? "Finish" : "Next Step"
-        let primaryPauseResumeLabel = state.phase == .active ? "Pause" : "Resume"
         
         return BrewSessionFlowUIState(
             stepTitle: stepTitle,
             instructionText: instructionText,
             waterLine: waterLine,
-            countdownText: countdownText,
             elapsedText: elapsedText,
-            isTimerVisible: isTimerVisible,
-            isReadyToAdvance: isReadyToAdvance,
             primaryNextLabel: primaryNextLabel,
-            primaryPauseResumeLabel: primaryPauseResumeLabel,
             pacingIndicator: pacingIndicator
         )
     }
@@ -194,54 +158,45 @@ final class BrewSessionFlowViewModel {
         switch step.stepKind {
         case .preparation:
             // No timer - ready to advance immediately
+            // DON'T start brew clock - no water pouring yet
             state.phase = .stepReadyToAdvance
             logger.debug("Preparation step - ready immediately")
             
         case .bloom:
-            // Show "Pour now" prompt, timer starts after user confirms pour
+            // Show "Pour now" prompt, brew clock starts after user confirms pour
             state.phase = .awaitingPourConfirmation
             logger.debug("Bloom step - awaiting pour confirmation")
             
         case .pour:
-            // Show elapsed time vs milestone, user confirms when target reached
+            // Start brew clock when water pouring begins (if not already running from bloom)
             if state.startedAt == nil {
                 state.startedAt = Date()
                 logger.debug("Starting brew clock on first pour step")
+            }
+            
+            // Always ensure timer loop is running for brew clock updates
+            if timerTask == nil {
+                startTimerLoop()
             }
             state.phase = .active
             logger.debug("Pour step - tracking elapsed time to milestone \(step.targetElapsedSeconds ?? 0)")
             
         case .wait:
-            // Auto-start countdown
-            if let duration = step.durationSeconds {
-                state.remainingTime = duration
-                if state.startedAt == nil {
-                    state.startedAt = Date()
-                    logger.debug("Starting brew clock on wait step")
-                }
-                state.phase = .active
+            // Continue brew clock, ready to advance
+            if timerTask == nil && state.startedAt != nil {
                 startTimerLoop()
-                logger.debug("Wait step - starting countdown for \(duration)s")
-            } else {
-                state.phase = .stepReadyToAdvance
             }
+            state.phase = .stepReadyToAdvance
+            logger.debug("Wait step - ready to advance")
             
         case .agitate:
             // Brief action - ready to advance immediately
+            // But continue timer loop for brew clock updates
+            if state.startedAt != nil && timerTask == nil {
+                startTimerLoop()
+            }
             state.phase = .stepReadyToAdvance
             logger.debug("Agitate step - ready immediately")
-        }
-    }
-    
-    /// Toggle between pause and resume
-    func togglePauseResume() {
-        switch state.phase {
-        case .active:
-            pauseTimer()
-        case .paused:
-            resumeTimer()
-        default:
-            logger.warning("togglePauseResume called in invalid phase: \(String(describing: self.state.phase))")
         }
     }
     
@@ -257,7 +212,6 @@ final class BrewSessionFlowViewModel {
             // Move to next step
             state.currentStepIndex += 1
             state.phase = .notStarted
-            state.remainingTime = nil
             
             logger.info("Advanced to step \(self.state.currentStepIndex + 1)")
             
@@ -266,48 +220,27 @@ final class BrewSessionFlowViewModel {
         }
     }
     
-    /// Called when user confirms bloom pour is complete - starts bloom wait timer
+    /// Called when user confirms bloom pour is complete - starts brew clock
     func confirmBloomPourComplete() {
         guard state.phase == .awaitingPourConfirmation else { return }
         guard let step = currentStep, step.stepKind == .bloom else { return }
         
-        // Start brew clock if not already started
+        // Start brew clock when user confirms they've poured water for bloom
         if state.startedAt == nil {
             state.startedAt = Date()
             logger.debug("Starting brew clock on bloom pour confirmation")
         }
         
-        // Start bloom wait timer
-        if let duration = step.durationSeconds {
-            state.remainingTime = duration
-            state.phase = .active
-            startTimerLoop()
-            logger.info("Bloom timer started: \(duration)s")
-        } else {
-            state.phase = .stepReadyToAdvance
-        }
+        // Start timer loop for brew clock updates and mark step ready to advance
+        startTimerLoop()
+        state.phase = .stepReadyToAdvance
+        logger.info("Bloom pour confirmed - brew clock started")
     }
     
-    /// Restart the brew session from step 1
-    func restart() {
-        logger.info("Restarting brew session")
-        
-        cancelTimerTask()
-        
-        state.currentStepIndex = 0
-        state.phase = .notStarted
-        state.remainingTime = nil
-        state.startedAt = nil
-        
-        // Auto-start first step
-        startStepIfNeeded()
-    }
-    
-    /// Handle app going to background
+    /// Handle app going to background (timer continues)
     func handleScenePhaseChange(isActive: Bool) {
-        if !isActive && state.phase == .active {
-            logger.info("App backgrounded - pausing timer")
-            pauseTimer()
+        if !isActive {
+            logger.debug("App backgrounded - brew clock continues tracking elapsed time")
         }
     }
     
@@ -345,28 +278,9 @@ final class BrewSessionFlowViewModel {
     
     // MARK: - Private Timer Methods
     
-    private func pauseTimer() {
-        guard state.phase == .active else { return }
-        
-        cancelTimerTask()
-        state.phase = .paused
-        
-        logger.debug("Timer paused at \(self.state.remainingTime ?? 0)s remaining")
-    }
-    
-    private func resumeTimer() {
-        guard state.phase == .paused else { return }
-        guard state.remainingTime != nil else { return }
-        
-        state.phase = .active
-        logger.debug("Timer resumed")
-        
-        startTimerLoop()
-    }
-    
     private func startTimerLoop() {
-        // Cancel any existing timer
-        cancelTimerTask()
+        // Don't start a new loop if one is already running
+        guard timerTask == nil else { return }
         
         timerTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -378,37 +292,15 @@ final class BrewSessionFlowViewModel {
                     
                     guard !Task.isCancelled else { break }
                     
-                    // Update remaining time
-                    await self.tick()
-                    
-                    // Check if timer reached 0
-                    if let remaining = self.state.remainingTime, remaining <= 0 {
-                        await self.timerReachedZero()
-                        break
-                    }
+                    // Force UI update for elapsed time by incrementing tick counter
+                    // This triggers @Observable to notify SwiftUI
+                    self.tickCount += 1
                 }
             } catch {
                 // Task was cancelled or sleep failed
                 logger.debug("Timer task cancelled or failed: \(error.localizedDescription)")
             }
         }
-    }
-    
-    private func tick() {
-        guard var remaining = state.remainingTime else { return }
-        guard state.phase == .active else { return }
-        
-        remaining -= 0.1
-        state.remainingTime = max(0, remaining)
-    }
-    
-    private func timerReachedZero() {
-        state.remainingTime = 0
-        state.phase = .stepReadyToAdvance
-        
-        cancelTimerTask()
-        
-        logger.info("Timer reached 0 for step \(self.state.currentStepIndex + 1)")
     }
     
     private func cancelTimerTask() {
@@ -426,13 +318,9 @@ struct BrewSessionFlowUIState {
     let waterLine: String?
     
     // Timer display
-    let countdownText: String?           // Per-step countdown (MM:SS)
     let elapsedText: String?             // Total brew time (MM:SS)
     
-    let isTimerVisible: Bool
-    let isReadyToAdvance: Bool
     let primaryNextLabel: String
-    let primaryPauseResumeLabel: String
     
     // Pacing indicator for pour steps
     let pacingIndicator: PacingIndicator?

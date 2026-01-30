@@ -133,43 +133,50 @@ extension PersistenceController {
         )
         context.insert(starterRecipe)
         
-        // Add steps to starter recipe
+        // Add steps to starter recipe with correct stepKind and time fields
         let steps = [
             RecipeStep(
                 orderIndex: 0,
                 instructionText: "Rinse filter and preheat",
+                stepKind: .preparation,
                 recipe: starterRecipe
             ),
             RecipeStep(
                 orderIndex: 1,
                 instructionText: "Add coffee, level bed",
+                stepKind: .preparation,
                 recipe: starterRecipe
             ),
             RecipeStep(
                 orderIndex: 2,
-                instructionText: "Bloom: pour 45g, start timer",
-                timerDurationSeconds: 45,
+                instructionText: "Bloom: pour 45g, wait 45s",
+                stepKind: .bloom,
+                durationSeconds: 45,
                 waterAmountGrams: 45,
+                isCumulativeWaterTarget: false,
                 recipe: starterRecipe
             ),
             RecipeStep(
                 orderIndex: 3,
                 instructionText: "Pour to 150g by 1:30",
-                timerDurationSeconds: 90,
+                stepKind: .pour,
+                targetElapsedSeconds: 90,
                 waterAmountGrams: 150,
                 recipe: starterRecipe
             ),
             RecipeStep(
                 orderIndex: 4,
                 instructionText: "Pour to 250g by 2:15",
-                timerDurationSeconds: 135,
+                stepKind: .pour,
+                targetElapsedSeconds: 135,
                 waterAmountGrams: 250,
                 recipe: starterRecipe
             ),
             RecipeStep(
                 orderIndex: 5,
                 instructionText: "Wait for drawdown, target finish 3:00–3:30",
-                timerDurationSeconds: 180,
+                stepKind: .wait,
+                durationSeconds: 60,
                 recipe: starterRecipe
             )
         ]

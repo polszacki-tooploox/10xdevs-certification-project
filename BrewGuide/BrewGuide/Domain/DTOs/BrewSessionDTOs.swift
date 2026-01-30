@@ -76,15 +76,13 @@ struct BrewSessionState: Codable, Hashable {
     let plan: BrewPlan
     var phase: Phase
     var currentStepIndex: Int
-    var remainingTime: TimeInterval?
     var startedAt: Date?
     let isInputsLocked: Bool
     
     enum Phase: String, Codable {
         case notStarted
-        case awaitingPourConfirmation   // NEW: Bloom step waiting for pour complete
-        case active
-        case paused
+        case awaitingPourConfirmation   // Bloom step waiting for pour complete
+        case active                      // Brew clock running
         case stepReadyToAdvance
         case completed
     }

@@ -79,11 +79,8 @@ struct BrewSessionFlowView: View {
             onNextStep: {
                 viewModel.nextStep()
             },
-            onPauseResume: {
-                viewModel.togglePauseResume()
-            },
-            onRestartHoldConfirmed: {
-                viewModel.restart()
+            onBloomPourComplete: {
+                viewModel.confirmBloomPourComplete()
             }
         )
     }
@@ -116,7 +113,7 @@ struct BrewSessionFlowView: View {
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Full Flow") {
     let testInputs = BrewInputs(
         recipeId: UUID(),
         recipeName: "Test Recipe",
@@ -132,83 +129,50 @@ struct BrewSessionFlowView: View {
         ScaledStep(
             stepId: UUID(),
             orderIndex: 0,
-            instructionText: "Pour 50g water in circular motion for bloom",
+            instructionText: "Rinse filter and preheat",
+            stepKind: .preparation,
+            durationSeconds: nil,
+            targetElapsedSeconds: nil,
+            waterAmountGrams: nil,
+            isCumulativeWaterTarget: false
+        ),
+        ScaledStep(
+            stepId: UUID(),
+            orderIndex: 1,
+            instructionText: "Add coffee, level bed",
+            stepKind: .preparation,
+            durationSeconds: nil,
+            targetElapsedSeconds: nil,
+            waterAmountGrams: nil,
+            isCumulativeWaterTarget: false
+        ),
+        ScaledStep(
+            stepId: UUID(),
+            orderIndex: 2,
+            instructionText: "Bloom: pour 50g, wait 45s",
             stepKind: .bloom,
-            durationSeconds: 30,
+            durationSeconds: 45,
             targetElapsedSeconds: nil,
             waterAmountGrams: 50,
             isCumulativeWaterTarget: false
         ),
         ScaledStep(
             stepId: UUID(),
-            orderIndex: 1,
-            instructionText: "Pour to 150g total",
+            orderIndex: 3,
+            instructionText: "Pour to 150g by 1:30",
             stepKind: .pour,
             durationSeconds: nil,
-            targetElapsedSeconds: 45,
+            targetElapsedSeconds: 90,
             waterAmountGrams: 150,
             isCumulativeWaterTarget: true
         ),
         ScaledStep(
             stepId: UUID(),
-            orderIndex: 2,
-            instructionText: "Pour remaining water to 250g",
+            orderIndex: 4,
+            instructionText: "Pour to 250g by 2:15",
             stepKind: .pour,
             durationSeconds: nil,
-            targetElapsedSeconds: nil,
-            waterAmountGrams: 250,
-            isCumulativeWaterTarget: true
-        )
-    ]
-    
-    let testPlan = BrewPlan(inputs: testInputs, scaledSteps: testSteps)
-    let presentation = BrewSessionPresentation(plan: testPlan)
-    
-    BrewSessionFlowView(presentation: presentation)
-        .environment(AppRootCoordinator())
-        .modelContainer(PersistenceController.preview.container)
-}
-
-#Preview {
-    let testInputs = BrewInputs(
-        recipeId: UUID(),
-        recipeName: "Test Recipe",
-        method: .v60,
-        doseGrams: 15.0,
-        targetYieldGrams: 250.0,
-        waterTemperatureCelsius: 93.0,
-        grindLabel: .medium,
-        lastEdited: .dose
-    )
-    
-    let testSteps = [
-        ScaledStep(
-            stepId: UUID(),
-            orderIndex: 0,
-            instructionText: "Pour 50g water in circular motion for bloom",
-            stepKind: .bloom,
-            durationSeconds: 30,
-            targetElapsedSeconds: nil,
-            waterAmountGrams: 50,
-            isCumulativeWaterTarget: false
-        ),
-        ScaledStep(
-            stepId: UUID(),
-            orderIndex: 1,
-            instructionText: "Pour to 150g total",
-            stepKind: .pour,
-            durationSeconds: nil,
-            targetElapsedSeconds: 45,
-            waterAmountGrams: 150,
-            isCumulativeWaterTarget: true
-        ),
-        ScaledStep(
-            stepId: UUID(),
-            orderIndex: 2,
-            instructionText: "Pour remaining water to 250g",
-            stepKind: .pour,
-            durationSeconds: nil,
-            targetElapsedSeconds: nil,
+            targetElapsedSeconds: 135,
             waterAmountGrams: 250,
             isCumulativeWaterTarget: true
         )
