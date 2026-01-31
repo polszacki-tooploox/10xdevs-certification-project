@@ -29,7 +29,7 @@ jobs:
       - name: Run SwiftLint
         run: |
           cd BrewGuide
-          xcodebuild clean build -project BrewGuide.xcodeproj -scheme BrewGuide -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0" | xcpretty --simple --color
+          xcodebuild clean build -project BrewGuide.xcodeproj -scheme BrewGuide -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2" | xcpretty --simple --color
         env:
           NSUnbufferedIO: YES
 
@@ -56,7 +56,7 @@ jobs:
           xcodebuild test \
             -project BrewGuide.xcodeproj \
             -scheme BrewGuideTests \
-            -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0" \
+            -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2" \
             -resultBundlePath TestResults/BrewGuideTests.xcresult
         env:
           NSUnbufferedIO: YES
@@ -92,7 +92,7 @@ jobs:
           xcodebuild test \
             -project BrewGuide.xcodeproj \
             -scheme BrewGuideUITests \
-            -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0" \
+            -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2" \
             -resultBundlePath TestResults/BrewGuideUITests.xcresult
         env:
           NSUnbufferedIO: YES
