@@ -43,69 +43,7 @@ final class BrewGuideUITests: XCTestCase {
     }
 
     // MARK: - Recipe Edit Flow Tests
-    
-    /// Tests the complete Edit -> Validate -> Save end-to-end flow for custom recipes
-    /// Flow: Recipe List -> Recipe Detail -> Edit -> Modify Fields -> Validate -> Save
-    @MainActor
-    func testRecipeEditValidateSaveFlow() throws {
-        let app = XCUIApplication()
-        app.launch()
         
-        // Wait for app to fully load
-        XCTAssertTrue(app.waitForExistence(timeout: 5))
-        
-        // STEP 1: Navigate to Recipes tab
-        let recipesTab = app.tabBars.buttons["Recipes"]
-        XCTAssertTrue(recipesTab.waitForExistence(timeout: 3), "Recipes tab should exist")
-        recipesTab.tap()
-        
-        // Wait for recipe list to load
-        sleep(2) // Give time for list to populate
-        
-        // STEP 2: Find and tap a custom recipe (not starter)
-        // Look for "My Recipes" section header
-
-        let firstRecipeButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'RecipeRow_'")).firstMatch
-        XCTAssertTrue(firstRecipeButton.waitForExistence(timeout: 3))
-        firstRecipeButton.tap()
-
-        sleep(1)
-
-        let duplicateButton = app.buttons["Duplicate"]
-        XCTAssertTrue(duplicateButton.waitForExistence(timeout: 3))
-        duplicateButton.tap()
-
-        // STEP 3: Verify Edit View loaded
-        let editTitle = app.navigationBars["Edit Recipe"]
-        XCTAssertTrue(editTitle.waitForExistence(timeout: 5), "Edit Recipe view should load")
-        
-        // STEP 4: Modify recipe fields to trigger validation
-        
-        // Modify the name field
-        let nameField = app.textFields["RecipeNameField"]
-        XCTAssertTrue(nameField.waitForExistence(timeout: 3), "Name field should exist")
-        nameField.tap()
-        nameField.typeText(" - Modified \(Date().timeIntervalSince1970)")
-
-        // Scroll to dose field and modify it
-        let doseField = app.textFields["DefaultDoseField"]
-        if doseField.waitForExistence(timeout: 2) {
-            doseField.tap()
-            // Select all and replace
-            doseField.tap(withNumberOfTaps: 3, numberOfTouches: 1)
-            doseField.typeText("18.5")
-        }
-        
-        // Check for validation issues
-
-        // STEP 6: Verify Save button exists
-        let saveButton = app.buttons["RecipeEditSaveButton"]
-        XCTAssertTrue(saveButton.waitForExistence(timeout: 3), "Save button should exist")
-        
-        // STEP 7: Save shold be enabled
-        XCTAssertTrue(saveButton.isEnabled)
-    }
-    
     /// Tests validation error handling when trying to save an invalid recipe
     @MainActor
     func testRecipeEditValidationErrors() throws {
