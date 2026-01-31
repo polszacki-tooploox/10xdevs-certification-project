@@ -99,9 +99,10 @@ struct RecipeDetailView: View {
         .task {
             if viewModel == nil {
                 let repository = RecipeRepository(context: modelContext)
+                let useCase = RecipeUseCase(repository: repository)
                 viewModel = RecipeDetailViewModel(
                     recipeId: recipeId,
-                    repository: repository
+                    useCase: useCase
                 )
                 await viewModel?.load()
             }

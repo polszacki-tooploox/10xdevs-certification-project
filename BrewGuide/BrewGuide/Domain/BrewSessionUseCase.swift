@@ -8,9 +8,15 @@
 import Foundation
 import SwiftData
 
+protocol BrewSessionUseCaseProtocol: Sendable {
+    @MainActor func createPlan(from inputs: BrewInputs) async throws -> BrewPlan
+    @MainActor func createInputs(from recipe: Recipe) -> BrewInputs
+    @MainActor func loadRecipeForBrewing(id: UUID?, fallbackMethod: BrewMethod) throws -> Recipe
+}
+
 /// Use case for brew session operations: creating brew plans, scaling recipes.
 @MainActor
-final class BrewSessionUseCase {
+final class BrewSessionUseCase: BrewSessionUseCaseProtocol {
     private let recipeRepository: RecipeRepositoryProtocol
     
     init(recipeRepository: RecipeRepositoryProtocol) {
@@ -71,6 +77,28 @@ final class BrewSessionUseCase {
             grindLabel: recipe.defaultGrindLabel,
             lastEdited: .yield
         )
+    }
+    
+    // MARK: - Load Recipe for Brewing
+    
+    /// Load a recipe for brewing, with fallback to starter recipe if specified recipe not found.
+    /// - Parameters:
+    ///   - id: Optional recipe ID to load
+    ///   - fallbackMethod: Brew method to use for starter fallback
+    /// - Returns: The loaded recipe
+    /// - Throws: BrewSessionError.recipeNotFound if neither specified nor starter recipe found
+    func loadRecipeForBrewing(id: UUID?, fallbackMethod: BrewMethod) throws -> Recipe {
+        // Try specified ID
+        if let id, let recipe = try recipeRepository.fetchRecipe(byId: id) {
+            return recipe
+        }
+        
+        // Fallback to starter
+        if let starter = try recipeRepository.fetchStarterRecipe(for: fallbackMethod) {
+            return starter
+        }
+        
+        throw BrewSessionError.recipeNotFound
     }
 }
 

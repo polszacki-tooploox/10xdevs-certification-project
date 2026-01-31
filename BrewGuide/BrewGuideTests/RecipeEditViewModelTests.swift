@@ -197,5 +197,21 @@ private struct FakeRecipeUseCase: RecipeUseCaseProtocol, @unchecked Sendable {
     func updateCustomRecipe(_ request: UpdateRecipeRequest) throws -> Result<Void, RecipeValidationErrors> {
         .success(())
     }
+    
+    func duplicateRecipe(id: UUID) throws -> UUID {
+        UUID()
+    }
+    
+    func deleteRecipe(id: UUID) throws {
+        // No-op for fake
+    }
+    
+    func canEdit(recipe: RecipeSummaryDTO) -> Bool {
+        !recipe.isStarter && recipe.origin != .starterTemplate
+    }
+    
+    func canDelete(recipe: RecipeSummaryDTO) -> Bool {
+        !recipe.isStarter && recipe.origin != .starterTemplate
+    }
 }
 

@@ -13,20 +13,6 @@ private let logger = Logger(subsystem: "com.brewguide", category: "RecipeListVie
 
 // MARK: - Helper Types
 
-/// Grouped recipe sections for the list view
-struct RecipeListSections: Equatable {
-    let starter: [RecipeSummaryDTO]
-    let custom: [RecipeSummaryDTO]
-    
-    var all: [RecipeSummaryDTO] {
-        starter + custom
-    }
-    
-    var isEmpty: Bool {
-        starter.isEmpty && custom.isEmpty
-    }
-}
-
 /// Error states for recipe list operations
 enum RecipeListErrorState: Equatable {
     case loadFailed(message: String)
@@ -43,7 +29,7 @@ enum RecipeListErrorState: Equatable {
 // MARK: - ViewModel
 
 /// Observable view-model for recipe list screen
-/// Handles loading, grouping, selection, and delete flows using repositories + preferences
+/// Handles loading, grouping, selection, and delete flows using use cases + preferences
 @Observable
 @MainActor
 final class RecipeListViewModel {
@@ -70,14 +56,14 @@ final class RecipeListViewModel {
     // MARK: - Dependencies
     
     private let preferences: PreferencesStore
-    private let repository: RecipeRepository
+    private let useCase: RecipeListUseCaseProtocol
     
     // MARK: - Init
     
     init(
         method: BrewMethod = .v60,
         preferences: PreferencesStore = .shared,
-        repository: RecipeRepository
+        useCase: RecipeListUseCaseProtocol
     ) {
         self.method = method
         self.sections = RecipeListSections(starter: [], custom: [])
@@ -86,7 +72,7 @@ final class RecipeListViewModel {
         self.pendingDelete = nil
         self.isDeleting = false
         self.preferences = preferences
-        self.repository = repository
+        self.useCase = useCase
     }
     
     // MARK: - Actions
@@ -97,31 +83,8 @@ final class RecipeListViewModel {
         errorState = nil
         
         do {
-            let recipes = try repository.fetchRecipes(for: method)
-            
-            // Map to DTOs with validation
-            let dtos = recipes.map { recipe -> RecipeSummaryDTO in
-                let validationErrors = repository.validate(recipe)
-                let isValid = validationErrors.isEmpty
-                return recipe.toSummaryDTO(isValid: isValid)
-            }
-            
-            // Group by origin
-            let starterRecipes = dtos
-                .filter { $0.isStarter || $0.origin == .starterTemplate }
-                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-            
-            let customRecipes = dtos
-                .filter { !$0.isStarter && $0.origin != .starterTemplate }
-                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-            
-            sections = RecipeListSections(
-                starter: starterRecipes,
-                custom: customRecipes
-            )
-            
-            logger.info("Loaded \(dtos.count) recipes: \(starterRecipes.count) starter, \(customRecipes.count) custom")
-            
+            sections = try useCase.fetchGroupedRecipes(for: method)
+            logger.info("Loaded recipes: \(self.sections.starter.count) starter, \(self.sections.custom.count) custom")
         } catch {
             logger.error("Failed to load recipes: \(error.localizedDescription)")
             errorState = .loadFailed(message: "Could not load recipes. Please try again.")
@@ -138,7 +101,7 @@ final class RecipeListViewModel {
     
     /// Request deletion of a recipe (triggers confirmation dialog)
     func requestDelete(_ recipe: RecipeSummaryDTO) {
-        guard !recipe.isStarter && recipe.origin != .starterTemplate else {
+        guard useCase.canDeleteRecipe(recipe) else {
             logger.warning("Attempted to delete starter recipe \(recipe.id.uuidString)")
             return
         }
@@ -159,19 +122,7 @@ final class RecipeListViewModel {
         errorState = nil
         
         do {
-            // Fetch the recipe entity
-            guard let recipe = try repository.fetchRecipe(byId: recipeToDelete.id) else {
-                logger.warning("Recipe \(recipeToDelete.id.uuidString) not found for deletion")
-                // Treat as success - already gone
-                pendingDelete = nil
-                await load()
-                return
-            }
-            
-            // Delete the recipe
-            try repository.deleteCustomRecipe(recipe)
-            try repository.save()
-            
+            try useCase.deleteRecipe(id: recipeToDelete.id)
             logger.info("Deleted recipe \(recipeToDelete.id.uuidString)")
             
             // Clear selection if deleted recipe was selected

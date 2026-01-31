@@ -29,7 +29,8 @@ struct RecipeListView: View {
         .task {
             if viewModel == nil {
                 let repository = RecipeRepository(context: modelContext)
-                viewModel = RecipeListViewModel(repository: repository)
+                let useCase = RecipeListUseCase(repository: repository)
+                viewModel = RecipeListViewModel(useCase: useCase)
                 await viewModel?.load()
             }
         }

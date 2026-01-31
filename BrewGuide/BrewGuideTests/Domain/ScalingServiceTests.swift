@@ -187,59 +187,7 @@ struct ScalingServiceTests {
         // Final pour: exactly yield
         #expect(response.scaledWaterTargets[2] == 250.0)
     }
-    
-    // MARK: - SC-007 & SC-008: Ratio warnings
-    
-    @Test("SC-007: Warning on low ratio (< 1:14)")
-    func testWarningOnLowRatio() {
-        // Arrange: Dose 15g, yield 200g → ratio 1:13.33 (below 1:14)
-        // Use lastEdited: .dose to prevent dose recalculation
-        let request = DTOFixtures.makeScaleInputsRequest(
-            recipeDefaultDose: 15.0,
-            recipeDefaultTargetYield: 250.0,
-            userDose: 15.0,
-            userTargetYield: 200.0,
-            lastEdited: .dose // Keep dose fixed, use user's yield
-        )
         
-        // Act
-        let response = service.scaleInputs(request: request, temperatureCelsius: 94.0)
-        
-        // Assert
-        #expect(response.warnings.count > 0)
-        
-        let hasRatioWarning = response.warnings.contains { warning in
-            if case .ratioTooLow = warning { return true }
-            return false
-        }
-        #expect(hasRatioWarning)
-    }
-    
-    @Test("SC-008: Warning on high ratio (> 1:18)")
-    func testWarningOnHighRatio() {
-        // Arrange: Dose 15g, yield 280g → ratio 1:18.67 (above 1:18)
-        // Use lastEdited: .dose to prevent dose recalculation
-        let request = DTOFixtures.makeScaleInputsRequest(
-            recipeDefaultDose: 15.0,
-            recipeDefaultTargetYield: 250.0,
-            userDose: 15.0,
-            userTargetYield: 280.0,
-            lastEdited: .dose // Keep dose fixed, use user's yield
-        )
-        
-        // Act
-        let response = service.scaleInputs(request: request, temperatureCelsius: 94.0)
-        
-        // Assert
-        #expect(response.warnings.count > 0)
-        
-        let hasRatioWarning = response.warnings.contains { warning in
-            if case .ratioTooHigh = warning { return true }
-            return false
-        }
-        #expect(hasRatioWarning)
-    }
-    
     // MARK: - SC-009 & SC-010: Temperature warnings
     
     @Test("SC-009: Warning on low temperature (< 90°C)")

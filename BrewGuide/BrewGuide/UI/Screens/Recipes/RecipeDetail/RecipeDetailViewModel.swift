@@ -57,7 +57,7 @@ final class RecipeDetailViewModel {
     
     // MARK: - Dependencies
     
-    private let repository: RecipeRepository
+    private let useCase: RecipeUseCaseProtocol
     private let preferences: PreferencesStore
     
     // MARK: - Derived UI Flags
@@ -71,13 +71,13 @@ final class RecipeDetailViewModel {
     /// Whether Edit action should be available (custom recipes only)
     var canEdit: Bool {
         guard let detail = state.detail else { return false }
-        return !detail.recipe.isStarter && detail.recipe.origin != .starterTemplate
+        return useCase.canEdit(recipe: detail.recipe)
     }
     
     /// Whether Delete action should be available (custom recipes only)
     var canDelete: Bool {
         guard let detail = state.detail else { return false }
-        return !detail.recipe.isStarter && detail.recipe.origin != .starterTemplate
+        return useCase.canDelete(recipe: detail.recipe)
     }
     
     /// Whether Duplicate action should be available (always true for loaded recipes)
@@ -89,11 +89,11 @@ final class RecipeDetailViewModel {
     
     init(
         recipeId: UUID,
-        repository: RecipeRepository,
+        useCase: RecipeUseCaseProtocol,
         preferences: PreferencesStore = .shared
     ) {
         self.recipeId = recipeId
-        self.repository = repository
+        self.useCase = useCase
         self.preferences = preferences
         self.state = RecipeDetailViewState(
             isLoading: false,
@@ -110,22 +110,15 @@ final class RecipeDetailViewModel {
         state.error = nil
         
         do {
-            guard let recipe = try repository.fetchRecipe(byId: recipeId) else {
-                state.isLoading = false
-                state.error = RecipeDetailErrorState(
-                    message: "Recipe not found. It may have been deleted.",
-                    isRetryable: false
-                )
-                return
-            }
-            
-            let validationErrors = repository.validate(recipe)
-            let isValid = validationErrors.isEmpty
-            let detail = recipe.toDetailDTO(isValid: isValid)
-            
+            let detail = try useCase.fetchRecipeDetail(id: recipeId)
             state.isLoading = false
             state.detail = detail
-            
+        } catch RecipeUseCaseError.recipeNotFound {
+            state.isLoading = false
+            state.error = RecipeDetailErrorState(
+                message: "Recipe not found. It may have been deleted.",
+                isRetryable: false
+            )
         } catch {
             os_log(.error, log: logger, "Failed to load recipe: %@", error.localizedDescription)
             state.isLoading = false
@@ -160,33 +153,21 @@ final class RecipeDetailViewModel {
     /// Confirm and execute deletion
     /// - Returns: `true` if successful (caller should navigate away)
     func confirmDelete() async -> Bool {
-        guard let pending = pendingDeletion else { return false }
+        guard pendingDeletion != nil else { return false }
         
         isPerformingAction = true
         defer { isPerformingAction = false }
         
         do {
-            guard let recipe = try repository.fetchRecipe(byId: pending.recipeId) else {
-                actionError = RecipeDetailActionError(
-                    message: "Recipe not found."
-                )
-                pendingDeletion = nil
-                return false
-            }
-            
-            try repository.deleteCustomRecipe(recipe)
-            try repository.save()
-            
+            try useCase.deleteRecipe(id: recipeId)
             pendingDeletion = nil
             return true
-            
-        } catch RecipeRepositoryError.cannotDeleteStarterRecipe {
+        } catch RecipeUseCaseError.cannotDeleteStarter {
             actionError = RecipeDetailActionError(
                 message: "Starter recipes cannot be deleted."
             )
             pendingDeletion = nil
             return false
-            
         } catch {
             os_log(.error, log: logger, "Failed to delete recipe: %@", error.localizedDescription)
             actionError = RecipeDetailActionError(
@@ -206,18 +187,8 @@ final class RecipeDetailViewModel {
         defer { isPerformingAction = false }
         
         do {
-            guard let recipe = try repository.fetchRecipe(byId: recipeId) else {
-                actionError = RecipeDetailActionError(
-                    message: "Recipe not found."
-                )
-                return nil
-            }
-            
-            let newRecipe = try repository.duplicate(recipe)
-            try repository.save()
-            
-            return newRecipe.id
-            
+            let newRecipeId = try useCase.duplicateRecipe(id: recipeId)
+            return newRecipeId
         } catch {
             os_log(.error, log: logger, "Failed to duplicate recipe: %@", error.localizedDescription)
             actionError = RecipeDetailActionError(

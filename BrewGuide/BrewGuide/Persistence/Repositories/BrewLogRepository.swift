@@ -6,6 +6,9 @@ import SwiftData
 protocol BrewLogRepositoryProtocol {
     func fetchAllLogs() throws -> [BrewLog]
     func fetchLog(byId id: UUID) throws -> BrewLog?
+    func fetchLogs(for method: BrewMethod) throws -> [BrewLog]
+    func fetchLogs(forRecipeId recipeId: UUID) throws -> [BrewLog]
+    func insert(_ log: BrewLog)
     func delete(_ log: BrewLog)
     func save() throws
 }
@@ -59,45 +62,5 @@ final class BrewLogRepository: BaseRepository<BrewLog>, BrewLogRepositoryProtoco
             sortBy: [SortDescriptor(\BrewLog.timestamp, order: .reverse)]
         )
         return try fetch(descriptor: descriptor)
-    }
-    
-    /// Calculate average rating for all logs
-    func calculateAverageRating() throws -> Double {
-        let logs = try fetchAllLogs()
-        guard !logs.isEmpty else { return 0 }
-        let sum = logs.reduce(0) { $0 + $1.rating }
-        return Double(sum) / Double(logs.count)
-    }
-    
-    /// Validate a brew log before saving
-    /// - Parameter log: The brew log to validate
-    /// - Returns: Array of validation errors (empty if valid)
-    func validate(_ log: BrewLog) -> [BrewLogValidationError] {
-        var errors: [BrewLogValidationError] = []
-        
-        // Rating must be 1-5
-        if log.rating < 1 || log.rating > 5 {
-            errors.append(.invalidRating(log.rating))
-        }
-        
-        // Recipe name snapshot cannot be empty
-        if log.recipeNameAtBrew.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyRecipeName)
-        }
-        
-        // Dose and yield must be positive
-        if log.doseGrams <= 0 {
-            errors.append(.invalidDose)
-        }
-        if log.targetYieldGrams <= 0 {
-            errors.append(.invalidYield)
-        }
-        
-        // Note length limit (280 characters per PRD suggestion)
-        if let note = log.note, note.count > 280 {
-            errors.append(.noteTooLong(count: note.count))
-        }
-        
-        return errors
     }
 }

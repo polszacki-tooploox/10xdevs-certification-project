@@ -19,8 +19,13 @@ final class FakeRecipeRepository: RecipeRepositoryProtocol {
     
     // Call tracking
     private(set) var fetchRecipeCalls: [UUID] = []
+    private(set) var fetchRecipesForMethodCalls: [BrewMethod] = []
+    private(set) var fetchStarterRecipeCalls: [BrewMethod] = []
+    private(set) var insertCalls: [Recipe] = []
+    private(set) var deleteCalls: [Recipe] = []
     private(set) var saveCalls: Int = 0
-    private(set) var validateCalls: [Recipe] = []
+    private(set) var replaceStepsCalls: [(recipe: Recipe, steps: [RecipeStep])] = []
+    private(set) var insertStepsCalls: [[RecipeStep]] = []
     
     // Error injection
     var shouldThrowOnFetch: Bool = false
@@ -43,6 +48,36 @@ final class FakeRecipeRepository: RecipeRepositoryProtocol {
         return recipes[id]
     }
     
+    func fetchRecipes(for method: BrewMethod) throws -> [Recipe] {
+        fetchRecipesForMethodCalls.append(method)
+        
+        if shouldThrowOnFetch {
+            throw fetchError
+        }
+        
+        return recipes.values.filter { $0.method == method }
+    }
+    
+    func fetchStarterRecipe(for method: BrewMethod) throws -> Recipe? {
+        fetchStarterRecipeCalls.append(method)
+        
+        if shouldThrowOnFetch {
+            throw fetchError
+        }
+        
+        return recipes.values.first { $0.isStarter && $0.method == method }
+    }
+    
+    func insert(_ recipe: Recipe) {
+        insertCalls.append(recipe)
+        recipes[recipe.id] = recipe
+    }
+    
+    func delete(_ recipe: Recipe) {
+        deleteCalls.append(recipe)
+        recipes.removeValue(forKey: recipe.id)
+    }
+    
     func save() throws {
         saveCalls += 1
         
@@ -51,76 +86,14 @@ final class FakeRecipeRepository: RecipeRepositoryProtocol {
         }
     }
     
-    func validate(_ recipe: Recipe) -> [RecipeValidationError] {
-        validateCalls.append(recipe)
-        
-        var errors: [RecipeValidationError] = []
-        
-        if recipe.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyName)
-        }
-        
-        if recipe.defaultDose <= 0 {
-            errors.append(.invalidDose)
-        }
-        
-        if recipe.defaultTargetYield <= 0 {
-            errors.append(.invalidYield)
-        }
-        
-        guard let steps = recipe.steps, !steps.isEmpty else {
-            errors.append(.noSteps)
-            return errors
-        }
-        
-        for step in steps where step.timerDurationSeconds ?? 0 < 0 {
-            errors.append(.negativeTimer(stepIndex: step.orderIndex))
-        }
-        
-        for step in steps where step.waterAmountGrams ?? 0 < 0 {
-            errors.append(.negativeWaterAmount(stepIndex: step.orderIndex))
-        }
-        
-        if let maxWater = steps.compactMap({ $0.waterAmountGrams }).max(),
-           steps.contains(where: { $0.isCumulativeWaterTarget }) {
-            let difference = abs(maxWater - recipe.defaultTargetYield)
-            if difference > 1.0 {
-                errors.append(.waterTotalMismatch(
-                    expected: recipe.defaultTargetYield,
-                    actual: maxWater
-                ))
-            }
-        }
-        
-        return errors
+    func replaceSteps(for recipe: Recipe, with steps: [RecipeStep]) {
+        replaceStepsCalls.append((recipe: recipe, steps: steps))
+        recipe.steps = steps
     }
     
-    func replaceSteps(for recipe: Recipe, with stepDTOs: [RecipeStepDTO]) throws {
-        // Sort DTOs by orderIndex and normalize to 0, 1, 2, ...
-        let normalizedSteps: [RecipeStepDTO] = stepDTOs
-            .sorted(by: { $0.orderIndex < $1.orderIndex })
-            .enumerated()
-            .map { index, dto in
-                RecipeStepDTO(
-                    stepId: dto.stepId,
-                    orderIndex: index,
-                    instructionText: dto.instructionText,
-                    stepKind: dto.stepKind,
-                    durationSeconds: dto.durationSeconds,
-                    targetElapsedSeconds: dto.targetElapsedSeconds,
-                    timerDurationSeconds: dto.timerDurationSeconds,
-                    waterAmountGrams: dto.waterAmountGrams,
-                    isCumulativeWaterTarget: dto.isCumulativeWaterTarget
-                )
-            }
-        
-        // Create new step entities (in-memory, no SwiftData context)
-        let newSteps = normalizedSteps.map { dto in
-            RecipeStep(from: dto, recipe: recipe)
-        }
-        
-        // Update recipe's steps
-        recipe.steps = newSteps
+    func insertSteps(_ steps: [RecipeStep]) {
+        insertStepsCalls.append(steps)
+        // In fake, steps are already linked to recipes
     }
     
     // MARK: - Test Helpers
@@ -143,7 +116,12 @@ final class FakeRecipeRepository: RecipeRepositoryProtocol {
     /// Reset all call tracking
     func resetCallTracking() {
         fetchRecipeCalls.removeAll()
+        fetchRecipesForMethodCalls.removeAll()
+        fetchStarterRecipeCalls.removeAll()
+        insertCalls.removeAll()
+        deleteCalls.removeAll()
         saveCalls = 0
-        validateCalls.removeAll()
+        replaceStepsCalls.removeAll()
+        insertStepsCalls.removeAll()
     }
 }

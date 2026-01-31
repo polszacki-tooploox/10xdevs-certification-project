@@ -10,6 +10,10 @@ import Foundation
 import SwiftData
 @testable import BrewGuide
 
+struct FakeError: Error {
+
+}
+
 /// Fake brew log repository for testing.
 /// Provides deterministic in-memory storage and tracks all interactions.
 @MainActor
@@ -26,9 +30,9 @@ final class FakeBrewLogRepository: BrewLogRepositoryProtocol {
     // Error injection
     var shouldThrowOnFetch: Bool = false
     var shouldThrowOnSave: Bool = false
-    var fetchError: Error = NSError(domain: "test", code: 1)
-    var saveError: Error = NSError(domain: "test", code: 2)
-    
+    var fetchError = FakeError()
+    var saveError = FakeError()
+
     init() {
     }
     
@@ -53,6 +57,30 @@ final class FakeBrewLogRepository: BrewLogRepositoryProtocol {
         
         // Return sorted by timestamp descending (most recent first)
         return logs.values.sorted { $0.timestamp > $1.timestamp }
+    }
+    
+    func fetchLogs(for method: BrewMethod) throws -> [BrewLog] {
+        if shouldThrowOnFetch {
+            throw fetchError
+        }
+        
+        return logs.values
+            .filter { $0.method == method }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+    
+    func fetchLogs(forRecipeId recipeId: UUID) throws -> [BrewLog] {
+        if shouldThrowOnFetch {
+            throw fetchError
+        }
+        
+        return logs.values
+            .filter { $0.id == recipeId }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+    
+    func insert(_ log: BrewLog) {
+        logs[log.id] = log
     }
     
     func delete(_ log: BrewLog) {

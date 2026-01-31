@@ -26,17 +26,18 @@ final class ConfirmInputsViewModel {
     
     private let preferences: PreferencesStore
     private let scalingService: ScalingService
-    private var recipeRepository: RecipeRepository?
-    private var brewSessionUseCase: BrewSessionUseCase?
+    private let brewSessionUseCase: BrewSessionUseCaseProtocol
     
     // MARK: - Initialization
     
     init(
         preferences: PreferencesStore = .shared,
-        scalingService: ScalingService = ScalingService()
+        scalingService: ScalingService = ScalingService(),
+        brewSessionUseCase: BrewSessionUseCaseProtocol
     ) {
         self.preferences = preferences
         self.scalingService = scalingService
+        self.brewSessionUseCase = brewSessionUseCase
     }
     
     // MARK: - Computed View State
@@ -80,21 +81,15 @@ final class ConfirmInputsViewModel {
     // MARK: - Lifecycle
     
     /// Load initial recipe on view appear.
-    func onAppear(context: ModelContext, recipeId: UUID?) async {
-        // Initialize repositories if needed
-        if recipeRepository == nil {
-            recipeRepository = RecipeRepository(context: context)
-            brewSessionUseCase = BrewSessionUseCase(recipeRepository: recipeRepository!)
-        }
-        
+    func onAppear(recipeId: UUID?) async {
         // Determine which recipe to load
         let targetRecipeId = recipeId ?? preferences.lastSelectedRecipeId
         
-        await loadRecipe(recipeId: targetRecipeId, context: context)
+        await loadRecipe(recipeId: targetRecipeId)
     }
     
     /// Refresh if selection changed (called when returning from recipe picker).
-    func refreshIfSelectionChanged(context: ModelContext) {
+    func refreshIfSelectionChanged() {
         let currentSelection = preferences.lastSelectedRecipeId
         
         guard let currentSelection, currentSelection != lastLoadedRecipeId else {
@@ -102,43 +97,22 @@ final class ConfirmInputsViewModel {
         }
         
         Task {
-            await loadRecipe(recipeId: currentSelection, context: context)
+            await loadRecipe(recipeId: currentSelection)
         }
     }
     
     // MARK: - Recipe Loading
     
-    private func loadRecipe(recipeId: UUID?, context: ModelContext) async {
-        guard let repository = recipeRepository else { return }
-        
+    private func loadRecipe(recipeId: UUID?) async {
         do {
-            // Try to fetch the specified recipe
-            var recipe: Recipe?
-            
-            if let recipeId {
-                recipe = try repository.fetchRecipe(byId: recipeId)
-            }
-            
-            // Fallback to starter recipe
-            if recipe == nil {
-                recipe = try repository.fetchStarterRecipe(for: .v60)
-            }
-            
-            // Final fallback to any recipe
-            if recipe == nil {
-                let descriptor = FetchDescriptor<Recipe>(
-                    sortBy: [SortDescriptor(\Recipe.name)]
-                )
-                recipe = try context.fetch(descriptor).first
-            }
-            
-            guard let recipe else {
-                ui.errorMessage = "No recipes available. Please add a recipe first."
-                return
-            }
+            // Use the use case to load recipe with fallback to starter
+            let recipe = try brewSessionUseCase.loadRecipeForBrewing(
+                id: recipeId,
+                fallbackMethod: .v60
+            )
             
             // Validate recipe
-            let validationErrors = repository.validate(recipe)
+            let validationErrors = RecipeValidator.validate(recipe)
             
             // Create snapshot
             recipeSnapshot = ConfirmInputsRecipeSnapshot(
@@ -154,16 +128,7 @@ final class ConfirmInputsViewModel {
             )
             
             // Create inputs draft from defaults
-            inputsDraft = BrewInputs(
-                recipeId: recipe.id,
-                recipeName: recipe.name,
-                method: recipe.method,
-                doseGrams: recipe.defaultDose,
-                targetYieldGrams: recipe.defaultTargetYield,
-                waterTemperatureCelsius: recipe.defaultWaterTemperature,
-                grindLabel: recipe.defaultGrindLabel,
-                lastEdited: .yield
-            )
+            inputsDraft = brewSessionUseCase.createInputs(from: recipe)
             
             // Compute initial scaling
             recomputeScaling()
@@ -320,11 +285,7 @@ final class ConfirmInputsViewModel {
         defer { ui.isStartingBrew = false }
         
         do {
-            guard let useCase = brewSessionUseCase else {
-                throw BrewSessionError.invalidInputs
-            }
-            
-            let plan = try await useCase.createPlan(from: inputs)
+            let plan = try await brewSessionUseCase.createPlan(from: inputs)
             
             // Present brew session
             coordinator.presentBrewSession(plan: plan)

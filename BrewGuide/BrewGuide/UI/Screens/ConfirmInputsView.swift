@@ -16,46 +16,51 @@ struct ConfirmInputsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
-    @State private var viewModel: ConfirmInputsViewModel
+    @State private var viewModel: ConfirmInputsViewModel?
     
     let initialRecipeId: UUID?
     
     init(initialRecipeId: UUID? = nil) {
         self.initialRecipeId = initialRecipeId
-        _viewModel = State(initialValue: ConfirmInputsViewModel())
     }
     
     var body: some View {
         Group {
-            if viewModel.isLoading {
-                ProgressView("Loading recipe...")
-            } else if let viewState = viewModel.viewState {
-                ConfirmInputsScreen(
-                    state: viewState,
-                    onEvent: handleEvent
-                )
+            if let viewModel {
+                if viewModel.isLoading {
+                    ProgressView("Loading recipe...")
+                } else if let viewState = viewModel.viewState {
+                    ConfirmInputsScreen(
+                        state: viewState,
+                        onEvent: handleEvent
+                    )
+                } else {
+                    noRecipeView
+                }
             } else {
-                noRecipeView
+                ProgressView("Loading...")
             }
         }
         .task {
-            await viewModel.onAppear(
-                context: modelContext,
-                recipeId: initialRecipeId
-            )
+            if viewModel == nil {
+                let repository = RecipeRepository(context: modelContext)
+                let useCase = BrewSessionUseCase(recipeRepository: repository)
+                viewModel = ConfirmInputsViewModel(brewSessionUseCase: useCase)
+                await viewModel?.onAppear(recipeId: initialRecipeId)
+            }
         }
         .onAppear {
-            viewModel.refreshIfSelectionChanged(context: modelContext)
+            viewModel?.refreshIfSelectionChanged()
         }
         .alert("Error", isPresented: Binding(
-            get: { viewModel.ui.showsError },
-            set: { if !$0 { viewModel.ui.errorMessage = nil } }
+            get: { viewModel?.ui.showsError ?? false },
+            set: { if !$0 { viewModel?.ui.errorMessage = nil } }
         )) {
             Button("OK") {
-                viewModel.ui.errorMessage = nil
+                viewModel?.ui.errorMessage = nil
             }
         } message: {
-            if let error = viewModel.ui.errorMessage {
+            if let error = viewModel?.ui.errorMessage {
                 Text(error)
             }
         }
@@ -74,6 +79,8 @@ struct ConfirmInputsView: View {
     // MARK: - Event Handling
     
     private func handleEvent(_ event: ConfirmInputsEvent) {
+        guard let viewModel else { return }
+        
         switch event {
         case .changeRecipeTapped:
             // Navigate to recipe list within the modal's navigation stack

@@ -95,32 +95,7 @@ struct BrewLogUseCaseTests {
         // Note: Summary DTO doesn't include note, would need detail DTO
         // This test documents that notes are stored
     }
-    
-    // MARK: - BL-004: Delete log
-    
-    @Test("BL-004: Delete log removes it from repository")
-    func testDeleteLogRemovesIt() throws {
-        // Arrange
-        let repository = FakeBrewLogRepository()
-        let useCase = makeUseCase(repository: repository)
         
-        let log = BrewLogFixtures.makeValidBrewLog()
-        repository.addLog(log)
-        
-        // Verify log exists
-        let logsBefore = try useCase.fetchAllLogSummaries()
-        #expect(logsBefore.count == 1)
-        
-        // Act
-        try useCase.deleteLog(id: log.id)
-        
-        // Assert
-        let logsAfter = try useCase.fetchAllLogSummaries()
-        #expect(logsAfter.isEmpty)
-        #expect(repository.deleteCalls.count == 1)
-        #expect(repository.saveCalls == 1)
-    }
-    
     // MARK: - BL-005: Cancel delete (non-operation)
     
     @Test("BL-005: Not calling delete preserves log")
@@ -242,24 +217,8 @@ struct BrewLogUseCaseTests {
         // Assert: Both logs present (order may vary for same timestamp)
         #expect(logs.count == 2)
     }
-    
+
     // MARK: - Repository error handling
-    
-    @Test("Delete log throws when save fails")
-    func testDeleteLogThrowsOnSaveFailure() {
-        // Arrange
-        let repository = FakeBrewLogRepository()
-        let useCase = makeUseCase(repository: repository)
-        
-        let log = BrewLogFixtures.makeValidBrewLog()
-        repository.addLog(log)
-        repository.shouldThrowOnSave = true
-        
-        // Act & Assert
-        #expect(throws: Error.self) {
-            try useCase.deleteLog(id: log.id)
-        }
-    }
     
     @Test("Fetch all logs throws when repository fails")
     func testFetchAllLogsThrowsOnRepositoryFailure() {

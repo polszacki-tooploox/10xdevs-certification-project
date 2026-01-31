@@ -328,4 +328,97 @@ struct BrewSessionUseCaseTests {
         let bloomStep = plan.scaledSteps.first { $0.stepKind == .bloom }
         #expect(bloomStep?.waterAmountGrams == 45.0) // Original amount
     }
+    
+    // MARK: - Load Recipe for Brewing Tests
+    
+    @Test("Load recipe by ID returns the specified recipe")
+    func testLoadRecipeByIdReturnsSpecifiedRecipe() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let recipe1 = RecipeFixtures.makeValidV60Recipe()
+        recipe1.name = "Recipe 1"
+        let recipe2 = RecipeFixtures.makeValidV60Recipe()
+        recipe2.name = "Recipe 2"
+        repository.addRecipe(recipe1)
+        repository.addRecipe(recipe2)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        let loadedRecipe = try useCase.loadRecipeForBrewing(id: recipe2.id, fallbackMethod: .v60)
+        
+        // Assert
+        #expect(loadedRecipe.id == recipe2.id)
+        #expect(loadedRecipe.name == "Recipe 2")
+    }
+    
+    @Test("Load recipe with nil ID falls back to starter recipe")
+    func testLoadRecipeWithNilIdFallsBackToStarter() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let starterRecipe = RecipeFixtures.makeStarterV60Recipe()
+        let customRecipe = RecipeFixtures.makeValidV60Recipe()
+        repository.addRecipe(starterRecipe)
+        repository.addRecipe(customRecipe)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        let loadedRecipe = try useCase.loadRecipeForBrewing(id: nil, fallbackMethod: .v60)
+        
+        // Assert
+        #expect(loadedRecipe.id == starterRecipe.id)
+        #expect(loadedRecipe.isStarter == true)
+    }
+    
+    @Test("Load recipe with non-existent ID falls back to starter recipe")
+    func testLoadRecipeWithNonExistentIdFallsBackToStarter() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let starterRecipe = RecipeFixtures.makeStarterV60Recipe()
+        repository.addRecipe(starterRecipe)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        let loadedRecipe = try useCase.loadRecipeForBrewing(
+            id: UUID(), // Non-existent
+            fallbackMethod: .v60
+        )
+        
+        // Assert
+        #expect(loadedRecipe.id == starterRecipe.id)
+        #expect(loadedRecipe.isStarter == true)
+    }
+    
+    @Test("Load recipe with no starter available throws recipeNotFound")
+    func testLoadRecipeWithNoStarterThrows() {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act & Assert
+        #expect(throws: BrewSessionError.recipeNotFound) {
+            try useCase.loadRecipeForBrewing(id: nil, fallbackMethod: .v60)
+        }
+    }
+    
+    @Test("Load recipe uses fallback method for starter lookup")
+    func testLoadRecipeUsesFallbackMethodForStarter() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let v60Starter = RecipeFixtures.makeStarterV60Recipe()
+        v60Starter.method = .v60
+        repository.addRecipe(v60Starter)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        let loadedRecipe = try useCase.loadRecipeForBrewing(id: nil, fallbackMethod: .v60)
+        
+        // Assert
+        #expect(loadedRecipe.method == .v60)
+        #expect(loadedRecipe.id == v60Starter.id)
+    }
 }
+

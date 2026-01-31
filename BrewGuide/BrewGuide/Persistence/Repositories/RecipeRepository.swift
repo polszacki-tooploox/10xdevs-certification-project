@@ -4,29 +4,38 @@ import SwiftData
 /// Protocol for recipe repository operations
 @MainActor
 protocol RecipeRepositoryProtocol {
+    // Fetch operations
     func fetchRecipe(byId id: UUID) throws -> Recipe?
+    func fetchRecipes(for method: BrewMethod) throws -> [Recipe]
+    func fetchStarterRecipe(for method: BrewMethod) throws -> Recipe?
+    
+    // CRUD operations
+    func insert(_ recipe: Recipe)
+    func delete(_ recipe: Recipe)
     func save() throws
-    func validate(_ recipe: Recipe) -> [RecipeValidationError]
-    func replaceSteps(for recipe: Recipe, with stepDTOs: [RecipeStepDTO]) throws
+    
+    // Step operations (pure persistence, no normalization)
+    func replaceSteps(for recipe: Recipe, with steps: [RecipeStep])
+    func insertSteps(_ steps: [RecipeStep])
 }
 
 /// Repository for Recipe persistence operations.
 @MainActor
 final class RecipeRepository: BaseRepository<Recipe>, RecipeRepositoryProtocol {
-    
+
     /// Fetch all recipes for a specific brew method
     func fetchRecipes(for method: BrewMethod) throws -> [Recipe] {
         // Fetch all recipes and filter in memory
         // SwiftData predicates don't support captured enum values
         let descriptor = FetchDescriptor<Recipe>()
         let allRecipes = try fetch(descriptor: descriptor)
-        
+
         // Filter by method and sort: starters first, then alphabetical by name
         return allRecipes
             .filter { $0.method == method }
             .sorted { ($0.isStarter && !$1.isStarter) || ($0.isStarter == $1.isStarter && $0.name < $1.name) }
     }
-    
+
     /// Fetch the starter recipe for a specific method
     func fetchStarterRecipe(for method: BrewMethod) throws -> Recipe? {
         // Fetch all starter recipes and filter in memory
@@ -38,7 +47,7 @@ final class RecipeRepository: BaseRepository<Recipe>, RecipeRepositoryProtocol {
         let starters = try fetch(descriptor: descriptor)
         return starters.first { $0.method == method }
     }
-    
+
     /// Fetch a recipe by its ID
     func fetchRecipe(byId id: UUID) throws -> Recipe? {
         let descriptor = FetchDescriptor<Recipe>(
@@ -46,156 +55,40 @@ final class RecipeRepository: BaseRepository<Recipe>, RecipeRepositoryProtocol {
         )
         return try fetch(descriptor: descriptor).first
     }
-    
-    /// Duplicate a recipe (typically for creating custom recipes from starters)
-    /// - Parameter source: The source recipe to duplicate
-    /// - Returns: A new custom recipe with cloned steps
-    func duplicate(_ source: Recipe) throws -> Recipe {
-        // Create new recipe with copied defaults
-        let newRecipe = Recipe(
-            isStarter: false,
-            origin: .custom,
-            method: source.method,
-            name: "\(source.name) Copy",
-            defaultDose: source.defaultDose,
-            defaultTargetYield: source.defaultTargetYield,
-            defaultWaterTemperature: source.defaultWaterTemperature,
-            defaultGrindLabel: source.defaultGrindLabel,
-            grindTactileDescriptor: source.grindTactileDescriptor
-        )
-        
-        // Clone steps
-        let clonedSteps = (source.steps ?? []).map { step in
-            RecipeStep(
-                orderIndex: step.orderIndex,
-                instructionText: step.instructionText,
-                timerDurationSeconds: step.timerDurationSeconds,
-                waterAmountGrams: step.waterAmountGrams,
-                isCumulativeWaterTarget: step.isCumulativeWaterTarget,
-                recipe: newRecipe
-            )
-        }
-        
-        // Insert recipe and steps
-        insert(newRecipe)
-        for step in clonedSteps {
-            context.insert(step)
-        }
-        newRecipe.steps = clonedSteps
-        
-        return newRecipe
-    }
-    
-    /// Delete a custom recipe (starter recipes cannot be deleted)
+
+    /// Delete a recipe (caller is responsible for business rule checks)
     /// - Parameter recipe: The recipe to delete
-    /// - Throws: Error if attempting to delete a starter recipe
-    func deleteCustomRecipe(_ recipe: Recipe) throws {
-        guard !recipe.isStarter else {
-            throw RecipeRepositoryError.cannotDeleteStarterRecipe
-        }
-        delete(recipe)
+    override func delete(_ recipe: Recipe) {
+        context.delete(recipe)
     }
-    
-    /// Replace all steps for a recipe with new steps from DTOs.
-    /// Deletes existing steps and creates new ones with normalized ordering.
+
+    /// Replace all steps for a recipe with new steps.
+    /// Note: Caller is responsible for sorting and normalizing step ordering.
     /// - Parameters:
     ///   - recipe: The recipe to update
-    ///   - stepDTOs: Array of step DTOs (will be sorted and normalized to contiguous orderIndex)
-    func replaceSteps(for recipe: Recipe, with stepDTOs: [RecipeStepDTO]) throws {
+    ///   - steps: Array of step entities (already normalized)
+    func replaceSteps(for recipe: Recipe, with steps: [RecipeStep]) {
         // Delete existing steps
         if let existingSteps = recipe.steps {
             for step in existingSteps {
                 context.delete(step)
             }
         }
-        
-        // Sort DTOs by orderIndex and normalize to 0, 1, 2, ...
-        let normalizedSteps: [RecipeStepDTO] = stepDTOs
-            .sorted(by: { $0.orderIndex < $1.orderIndex })
-            .enumerated()
-            .map { index, dto in
-                RecipeStepDTO(
-                    stepId: dto.stepId,
-                    orderIndex: index,
-                    instructionText: dto.instructionText,
-                    stepKind: dto.stepKind,
-                    durationSeconds: dto.durationSeconds,
-                    targetElapsedSeconds: dto.targetElapsedSeconds,
-                    timerDurationSeconds: dto.timerDurationSeconds,
-                    waterAmountGrams: dto.waterAmountGrams,
-                    isCumulativeWaterTarget: dto.isCumulativeWaterTarget
-                )
-            }
-        
-        // Create new step entities
-        let newSteps = normalizedSteps.map { dto in
-            RecipeStep(from: dto, recipe: recipe)
-        }
-        
-        // Insert steps into context
-        for step in newSteps {
+
+        // Insert new steps
+        for step in steps {
             context.insert(step)
         }
-        
+
         // Update recipe's steps relationship
-        recipe.steps = newSteps
+        recipe.steps = steps
     }
-    
-    /// Validate a recipe against business rules
-    /// - Parameter recipe: The recipe to validate
-    /// - Returns: Array of validation errors (empty if valid)
-    func validate(_ recipe: Recipe) -> [RecipeValidationError] {
-        var errors: [RecipeValidationError] = []
-        
-        // Validate name is not empty
-        if recipe.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(.emptyName)
-        }
-        
-        // Validate dose and yield are positive
-        if recipe.defaultDose <= 0 {
-            errors.append(.invalidDose)
-        }
-        if recipe.defaultTargetYield <= 0 {
-            errors.append(.invalidYield)
-        }
-        
-        // Validate steps
-        guard let steps = recipe.steps, !steps.isEmpty else {
-            errors.append(.noSteps)
-            return errors
-        }
-        
-        // All timers must be non-negative
+
+    /// Insert multiple steps into context
+    /// - Parameter steps: Array of step entities to insert
+    func insertSteps(_ steps: [RecipeStep]) {
         for step in steps {
-            if let duration = step.timerDurationSeconds, duration < 0 {
-                errors.append(.negativeTimer(stepIndex: step.orderIndex))
-            }
-        }
-        
-        // Sum of water additions should equal target yield (±1g tolerance)
-        let waterSteps = steps.compactMap { $0.waterAmountGrams }
-        if !waterSteps.isEmpty {
-            let totalWater = waterSteps.max() ?? 0 // Assuming cumulative targets
-            let difference = abs(totalWater - recipe.defaultTargetYield)
-            if difference > 1.0 {
-                errors.append(.waterTotalMismatch(expected: recipe.defaultTargetYield, actual: totalWater))
-            }
-        }
-        
-        return errors
-    }
-}
-
-// MARK: - Errors
-
-enum RecipeRepositoryError: LocalizedError {
-    case cannotDeleteStarterRecipe
-    
-    var errorDescription: String? {
-        switch self {
-        case .cannotDeleteStarterRecipe:
-            return "Starter recipes cannot be deleted."
+            context.insert(step)
         }
     }
 }

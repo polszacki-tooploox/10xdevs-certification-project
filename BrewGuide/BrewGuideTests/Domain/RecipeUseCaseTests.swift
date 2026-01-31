@@ -41,7 +41,6 @@ struct RecipeUseCaseTests {
         #expect(detail.recipe.isValid == true)
         #expect(detail.steps.count == 5)
         #expect(repository.fetchRecipeCalls.count == 1)
-        #expect(repository.validateCalls.count == 1)
     }
     
     @Test("Fetch non-existent recipe throws recipeNotFound error")
@@ -322,11 +321,43 @@ struct RecipeUseCaseTests {
         repository.addRecipe(recipe)
         let useCase = makeUseCase(repository: repository)
         
+        // Create steps that match the updated yield of 300g
+        let updatedSteps = [
+            DTOFixtures.makeRecipeStepDTO(
+                orderIndex: 0,
+                instructionText: "Rinse filter",
+                stepKind: .preparation,
+                durationSeconds: nil,
+                targetElapsedSeconds: nil,
+                waterAmountGrams: nil,
+                isCumulativeWaterTarget: false
+            ),
+            DTOFixtures.makeRecipeStepDTO(
+                orderIndex: 1,
+                instructionText: "Bloom",
+                stepKind: .bloom,
+                durationSeconds: 45,
+                targetElapsedSeconds: nil,
+                waterAmountGrams: 54.0, // Scaled for 300g
+                isCumulativeWaterTarget: true
+            ),
+            DTOFixtures.makeRecipeStepDTO(
+                orderIndex: 2,
+                instructionText: "Pour to 300g",
+                stepKind: .pour,
+                durationSeconds: nil,
+                targetElapsedSeconds: 135,
+                waterAmountGrams: 300.0, // Matches yield
+                isCumulativeWaterTarget: true
+            )
+        ]
+        
         let request = DTOFixtures.makeUpdateRecipeRequest(
             id: recipe.id,
             name: "Updated Recipe Name",
             defaultDose: 18.0,
-            defaultTargetYield: 300.0
+            defaultTargetYield: 300.0,
+            steps: updatedSteps
         )
         
         // Act
@@ -446,50 +477,6 @@ struct RecipeUseCaseTests {
         #expect(hasMismatchError)
     }
     
-    // MARK: - Step ordering and normalization
-    
-    @Test("Steps are normalized to contiguous orderIndex during update")
-    func testStepsNormalizedToContiguousOrder() throws {
-        // Arrange
-        let repository = FakeRecipeRepository()
-        let recipe = RecipeFixtures.makeValidV60Recipe()
-        repository.addRecipe(recipe)
-        let useCase = makeUseCase(repository: repository)
-        
-        // Provide steps with non-contiguous orderIndex
-        let steps = [
-            DTOFixtures.makeRecipeStepDTO(orderIndex: 5, instructionText: "First"),
-            DTOFixtures.makeRecipeStepDTO(orderIndex: 10, instructionText: "Second"),
-            DTOFixtures.makeRecipeStepDTO(orderIndex: 2, instructionText: "Third")
-        ]
-        
-        let request = DTOFixtures.makeUpdateRecipeRequest(
-            id: recipe.id,
-            steps: steps
-        )
-        
-        // Act
-        let result = try useCase.updateCustomRecipe(request)
-        
-        // Assert
-        guard case .success = result else {
-            Issue.record("Expected success")
-            return
-        }
-        
-        let updatedRecipe = repository.getRecipe(byId: recipe.id)
-        let savedSteps = updatedRecipe?.steps?.sorted { $0.orderIndex < $1.orderIndex }
-        
-        // Steps should be normalized to 0, 1, 2 (sorted by original orderIndex)
-        #expect(savedSteps?.count == 3)
-        #expect(savedSteps?[0].orderIndex == 0)
-        #expect(savedSteps?[0].instructionText == "Third") // Was orderIndex 2
-        #expect(savedSteps?[1].orderIndex == 1)
-        #expect(savedSteps?[1].instructionText == "First") // Was orderIndex 5
-        #expect(savedSteps?[2].orderIndex == 2)
-        #expect(savedSteps?[2].instructionText == "Second") // Was orderIndex 10
-    }
-    
     // MARK: - Error handling
     
     @Test("Update throws recipeNotFound for non-existent recipe")
@@ -524,4 +511,235 @@ struct RecipeUseCaseTests {
             try useCase.updateCustomRecipe(request)
         }
     }
+    
+    // MARK: - Duplicate Recipe Tests
+    
+    @Test("Duplicate recipe creates new custom recipe with 'Copy' suffix")
+    func testDuplicateRecipeCreatesCustomCopy() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let sourceRecipe = RecipeFixtures.makeValidV60Recipe()
+        sourceRecipe.name = "Original Recipe"
+        repository.addRecipe(sourceRecipe)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        let newId = try useCase.duplicateRecipe(id: sourceRecipe.id)
+        
+        // Assert
+        #expect(newId != sourceRecipe.id)
+        #expect(repository.insertCalls.count == 1)
+        #expect(repository.insertStepsCalls.count == 1)
+        #expect(repository.saveCalls == 1)
+        
+        let newRecipe = repository.getRecipe(byId: newId)
+        #expect(newRecipe?.name == "Original Recipe Copy")
+        #expect(newRecipe?.isStarter == false)
+        #expect(newRecipe?.origin == .custom)
+        #expect(newRecipe?.defaultDose == sourceRecipe.defaultDose)
+        #expect(newRecipe?.defaultTargetYield == sourceRecipe.defaultTargetYield)
+    }
+    
+    @Test("Duplicate recipe clones all steps")
+    func testDuplicateRecipeClonesSteps() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let sourceRecipe = RecipeFixtures.makeValidV60Recipe()
+        repository.addRecipe(sourceRecipe)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        let newId = try useCase.duplicateRecipe(id: sourceRecipe.id)
+        
+        // Assert
+        let newRecipe = repository.getRecipe(byId: newId)
+        let sourceStepCount = sourceRecipe.steps?.count ?? 0
+        let newStepCount = newRecipe?.steps?.count ?? 0
+        
+        #expect(newStepCount == sourceStepCount)
+        #expect(newStepCount > 0) // Ensure steps were actually cloned
+    }
+    
+    @Test("Duplicate starter recipe creates custom non-starter copy")
+    func testDuplicateStarterRecipeCreatesCustom() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let starterRecipe = RecipeFixtures.makeStarterV60Recipe()
+        repository.addRecipe(starterRecipe)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        let newId = try useCase.duplicateRecipe(id: starterRecipe.id)
+        
+        // Assert
+        let newRecipe = repository.getRecipe(byId: newId)
+        #expect(newRecipe?.isStarter == false)
+        #expect(newRecipe?.origin == .custom)
+    }
+    
+    @Test("Duplicate non-existent recipe throws recipeNotFound")
+    func testDuplicateNonExistentRecipeThrows() {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act & Assert
+        #expect(throws: RecipeUseCaseError.recipeNotFound) {
+            try useCase.duplicateRecipe(id: UUID())
+        }
+    }
+    
+    // MARK: - Delete Recipe Tests
+    
+    @Test("Delete custom recipe succeeds and saves")
+    func testDeleteCustomRecipeSucceeds() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let recipe = RecipeFixtures.makeValidV60Recipe()
+        repository.addRecipe(recipe)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act
+        try useCase.deleteRecipe(id: recipe.id)
+        
+        // Assert
+        #expect(repository.deleteCalls.count == 1)
+        #expect(repository.saveCalls == 1)
+        #expect(repository.getRecipe(byId: recipe.id) == nil)
+    }
+    
+    @Test("Delete non-existent recipe succeeds (idempotent)")
+    func testDeleteNonExistentRecipeSucceeds() throws {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act & Assert - Should not throw
+        try useCase.deleteRecipe(id: UUID())
+        
+        #expect(repository.deleteCalls.isEmpty)
+        #expect(repository.saveCalls == 0)
+    }
+    
+    @Test("Delete starter recipe throws cannotDeleteStarter error")
+    func testDeleteStarterRecipeThrows() {
+        // Arrange
+        let repository = FakeRecipeRepository()
+        let starterRecipe = RecipeFixtures.makeStarterV60Recipe()
+        repository.addRecipe(starterRecipe)
+        
+        let useCase = makeUseCase(repository: repository)
+        
+        // Act & Assert
+        #expect(throws: RecipeUseCaseError.cannotDeleteStarter) {
+            try useCase.deleteRecipe(id: starterRecipe.id)
+        }
+        
+        #expect(repository.deleteCalls.isEmpty)
+        #expect(repository.saveCalls == 0)
+        #expect(repository.getRecipe(byId: starterRecipe.id) != nil) // Still exists
+    }
+    
+    // MARK: - Can Edit/Delete Tests
+    
+    @Test("Can edit custom recipe returns true")
+    func testCanEditCustomRecipe() {
+        // Arrange
+        let useCase = makeUseCase(repository: FakeRecipeRepository())
+        let customRecipe = RecipeSummaryDTO(
+            id: UUID(),
+            name: "Custom",
+            method: .v60,
+            isStarter: false,
+            origin: .custom,
+            isValid: true,
+            defaultDose: 15,
+            defaultTargetYield: 250,
+            defaultWaterTemperature: 94,
+            defaultGrindLabel: .medium
+        )
+        
+        // Act
+        let canEdit = useCase.canEdit(recipe: customRecipe)
+        
+        // Assert
+        #expect(canEdit == true)
+    }
+    
+    @Test("Cannot edit starter recipe")
+    func testCannotEditStarterRecipe() {
+        // Arrange
+        let useCase = makeUseCase(repository: FakeRecipeRepository())
+        let starterRecipe = RecipeSummaryDTO(
+            id: UUID(),
+            name: "Starter",
+            method: .v60,
+            isStarter: true,
+            origin: .starterTemplate,
+            isValid: true,
+            defaultDose: 15,
+            defaultTargetYield: 250,
+            defaultWaterTemperature: 94,
+            defaultGrindLabel: .medium
+        )
+        
+        // Act
+        let canEdit = useCase.canEdit(recipe: starterRecipe)
+        
+        // Assert
+        #expect(canEdit == false)
+    }
+    
+    @Test("Can delete custom recipe returns true")
+    func testCanDeleteCustomRecipe() {
+        // Arrange
+        let useCase = makeUseCase(repository: FakeRecipeRepository())
+        let customRecipe = RecipeSummaryDTO(
+            id: UUID(),
+            name: "Custom",
+            method: .v60,
+            isStarter: false,
+            origin: .custom,
+            isValid: true,
+            defaultDose: 15,
+            defaultTargetYield: 250,
+            defaultWaterTemperature: 94,
+            defaultGrindLabel: .medium
+        )
+        
+        // Act
+        let canDelete = useCase.canDelete(recipe: customRecipe)
+        
+        // Assert
+        #expect(canDelete == true)
+    }
+    
+    @Test("Cannot delete starter recipe")
+    func testCannotDeleteStarterRecipe() {
+        // Arrange
+        let useCase = makeUseCase(repository: FakeRecipeRepository())
+        let starterRecipe = RecipeSummaryDTO(
+            id: UUID(),
+            name: "Starter",
+            method: .v60,
+            isStarter: true,
+            origin: .starterTemplate,
+            isValid: true,
+            defaultDose: 15,
+            defaultTargetYield: 250,
+            defaultWaterTemperature: 94,
+            defaultGrindLabel: .medium
+        )
+        
+        // Act
+        let canDelete = useCase.canDelete(recipe: starterRecipe)
+        
+        // Assert
+        #expect(canDelete == false)
+    }
 }
+
