@@ -1,9 +1,18 @@
 import Foundation
 import SwiftData
 
+/// Protocol for brew log repository operations
+@MainActor
+protocol BrewLogRepositoryProtocol {
+    func fetchAllLogs() throws -> [BrewLog]
+    func fetchLog(byId id: UUID) throws -> BrewLog?
+    func delete(_ log: BrewLog)
+    func save() throws
+}
+
 /// Repository for BrewLog persistence operations.
 @MainActor
-final class BrewLogRepository: BaseRepository<BrewLog> {
+final class BrewLogRepository: BaseRepository<BrewLog>, BrewLogRepositoryProtocol {
     
     /// Fetch all brew logs in chronological order (most recent first)
     func fetchAllLogs() throws -> [BrewLog] {

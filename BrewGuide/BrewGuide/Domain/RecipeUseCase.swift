@@ -33,9 +33,9 @@ struct RecipeValidationErrors: Error, Equatable, Sendable {
 
 @MainActor
 final class RecipeUseCase: RecipeUseCaseProtocol {
-    private let repository: RecipeRepository
+    private let repository: RecipeRepositoryProtocol
     
-    init(repository: RecipeRepository) {
+    init(repository: RecipeRepositoryProtocol) {
         self.repository = repository
     }
     
@@ -64,38 +64,8 @@ final class RecipeUseCase: RecipeUseCaseProtocol {
         
         recipe.update(from: request)
         
-        // Replace all steps, enforcing contiguous orderIndex.
-        let normalizedSteps: [RecipeStepDTO] = request.steps
-            .sorted(by: { $0.orderIndex < $1.orderIndex })
-            .enumerated()
-            .map { index, dto in
-                RecipeStepDTO(
-                    stepId: dto.stepId,
-                    orderIndex: index,
-                    instructionText: dto.instructionText,
-                    stepKind: dto.stepKind,
-                    durationSeconds: dto.durationSeconds,
-                    targetElapsedSeconds: dto.targetElapsedSeconds,
-                    timerDurationSeconds: dto.timerDurationSeconds,
-                    waterAmountGrams: dto.waterAmountGrams,
-                    isCumulativeWaterTarget: dto.isCumulativeWaterTarget
-                )
-            }
-        
-        if let existingSteps = recipe.steps {
-            for step in existingSteps {
-                repository.context.delete(step)
-            }
-        }
-        
-        let newSteps = normalizedSteps.map { dto in
-            RecipeStep(from: dto, recipe: recipe)
-        }
-        
-        for step in newSteps {
-            repository.context.insert(step)
-        }
-        recipe.steps = newSteps
+        // Replace all steps using repository method
+        try repository.replaceSteps(for: recipe, with: request.steps)
         
         do {
             try repository.save()

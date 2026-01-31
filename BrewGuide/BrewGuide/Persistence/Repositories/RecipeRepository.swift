@@ -1,9 +1,18 @@
 import Foundation
 import SwiftData
 
+/// Protocol for recipe repository operations
+@MainActor
+protocol RecipeRepositoryProtocol {
+    func fetchRecipe(byId id: UUID) throws -> Recipe?
+    func save() throws
+    func validate(_ recipe: Recipe) -> [RecipeValidationError]
+    func replaceSteps(for recipe: Recipe, with stepDTOs: [RecipeStepDTO]) throws
+}
+
 /// Repository for Recipe persistence operations.
 @MainActor
-final class RecipeRepository: BaseRepository<Recipe> {
+final class RecipeRepository: BaseRepository<Recipe>, RecipeRepositoryProtocol {
     
     /// Fetch all recipes for a specific brew method
     func fetchRecipes(for method: BrewMethod) throws -> [Recipe] {
@@ -85,6 +94,51 @@ final class RecipeRepository: BaseRepository<Recipe> {
             throw RecipeRepositoryError.cannotDeleteStarterRecipe
         }
         delete(recipe)
+    }
+    
+    /// Replace all steps for a recipe with new steps from DTOs.
+    /// Deletes existing steps and creates new ones with normalized ordering.
+    /// - Parameters:
+    ///   - recipe: The recipe to update
+    ///   - stepDTOs: Array of step DTOs (will be sorted and normalized to contiguous orderIndex)
+    func replaceSteps(for recipe: Recipe, with stepDTOs: [RecipeStepDTO]) throws {
+        // Delete existing steps
+        if let existingSteps = recipe.steps {
+            for step in existingSteps {
+                context.delete(step)
+            }
+        }
+        
+        // Sort DTOs by orderIndex and normalize to 0, 1, 2, ...
+        let normalizedSteps: [RecipeStepDTO] = stepDTOs
+            .sorted(by: { $0.orderIndex < $1.orderIndex })
+            .enumerated()
+            .map { index, dto in
+                RecipeStepDTO(
+                    stepId: dto.stepId,
+                    orderIndex: index,
+                    instructionText: dto.instructionText,
+                    stepKind: dto.stepKind,
+                    durationSeconds: dto.durationSeconds,
+                    targetElapsedSeconds: dto.targetElapsedSeconds,
+                    timerDurationSeconds: dto.timerDurationSeconds,
+                    waterAmountGrams: dto.waterAmountGrams,
+                    isCumulativeWaterTarget: dto.isCumulativeWaterTarget
+                )
+            }
+        
+        // Create new step entities
+        let newSteps = normalizedSteps.map { dto in
+            RecipeStep(from: dto, recipe: recipe)
+        }
+        
+        // Insert steps into context
+        for step in newSteps {
+            context.insert(step)
+        }
+        
+        // Update recipe's steps relationship
+        recipe.steps = newSteps
     }
     
     /// Validate a recipe against business rules

@@ -33,6 +33,9 @@ struct RecipeEditViewModelTests {
                         stepId: stepId,
                         orderIndex: 0,
                         instructionText: "Bloom",
+                        stepKind: .bloom,
+                        durationSeconds: 30,
+                        targetElapsedSeconds: 30,
                         timerDurationSeconds: nil,
                         waterAmountGrams: 50,
                         isCumulativeWaterTarget: true
@@ -86,8 +89,8 @@ struct RecipeEditViewModelTests {
             ),
             grindTactileDescriptor: nil,
             steps: [
-                RecipeStepDTO(stepId: stepA, orderIndex: 0, instructionText: "Bloom", timerDurationSeconds: nil, waterAmountGrams: 50, isCumulativeWaterTarget: true),
-                RecipeStepDTO(stepId: stepB, orderIndex: 1, instructionText: "Pour", timerDurationSeconds: nil, waterAmountGrams: 200, isCumulativeWaterTarget: true)
+                RecipeStepDTO(stepId: stepA, orderIndex: 0, instructionText: "Bloom", stepKind: .bloom, durationSeconds: 30, targetElapsedSeconds: 30, timerDurationSeconds: nil, waterAmountGrams: 50, isCumulativeWaterTarget: true),
+                RecipeStepDTO(stepId: stepB, orderIndex: 1, instructionText: "Pour", stepKind: .pour, durationSeconds: 90, targetElapsedSeconds: 120, timerDurationSeconds: nil, waterAmountGrams: 200, isCumulativeWaterTarget: true)
             ]
         )
         
@@ -145,6 +148,9 @@ struct RecipeEditViewModelTests {
                     stepId: stepId,
                     orderIndex: 0,
                     instructionText: "Step",
+                    stepKind: .pour,
+                    durationSeconds: 60,
+                    targetElapsedSeconds: 60,
                     timerDurationSeconds: nil,
                     waterAmountGrams: 250,
                     isCumulativeWaterTarget: true
@@ -169,8 +175,8 @@ struct RecipeEditViewModelTests {
             ),
             grindTactileDescriptor: nil,
             steps: [
-                RecipeStepDTO(stepId: stepA, orderIndex: 0, instructionText: "A", timerDurationSeconds: nil, waterAmountGrams: 50, isCumulativeWaterTarget: true),
-                RecipeStepDTO(stepId: stepB, orderIndex: 1, instructionText: "B", timerDurationSeconds: nil, waterAmountGrams: 250, isCumulativeWaterTarget: true)
+                RecipeStepDTO(stepId: stepA, orderIndex: 0, instructionText: "A", stepKind: .bloom, durationSeconds: 30, targetElapsedSeconds: 30, timerDurationSeconds: nil, waterAmountGrams: 50, isCumulativeWaterTarget: true),
+                RecipeStepDTO(stepId: stepB, orderIndex: 1, instructionText: "B", stepKind: .pour, durationSeconds: 90, targetElapsedSeconds: 120, timerDurationSeconds: nil, waterAmountGrams: 250, isCumulativeWaterTarget: true)
             ]
         )
     }

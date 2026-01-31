@@ -11,9 +11,9 @@ import SwiftData
 /// Use case for brew session operations: creating brew plans, scaling recipes.
 @MainActor
 final class BrewSessionUseCase {
-    private let recipeRepository: RecipeRepository
+    private let recipeRepository: RecipeRepositoryProtocol
     
-    init(recipeRepository: RecipeRepository) {
+    init(recipeRepository: RecipeRepositoryProtocol) {
         self.recipeRepository = recipeRepository
     }
     

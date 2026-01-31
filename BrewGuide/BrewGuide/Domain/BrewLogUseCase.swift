@@ -18,10 +18,10 @@ import SwiftData
 /// Encapsulates log deletion and other mutations so the UI doesn't manipulate ModelContext directly.
 @MainActor
 final class BrewLogUseCase {
-    private let repository: BrewLogRepository
+    private let repository: BrewLogRepositoryProtocol
     
     /// Initialize with a brew log repository
-    init(repository: BrewLogRepository) {
+    init(repository: BrewLogRepositoryProtocol) {
         self.repository = repository
     }
     
