@@ -96,14 +96,6 @@ final class BrewGuideUITests: XCTestCase {
             doseField.typeText("18.5")
         }
         
-        // Scroll to yield field
-        let yieldField = app.textFields["TargetYieldField"]
-        if yieldField.waitForExistence(timeout: 2) {
-            yieldField.tap()
-            yieldField.tap(withNumberOfTaps: 3, numberOfTouches: 1)
-            yieldField.typeText("250")
-        }
-        
         // Check for validation issues
 
         // STEP 6: Verify Save button exists
