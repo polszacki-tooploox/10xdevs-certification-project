@@ -42,12 +42,6 @@ struct RecipeEditNumericFieldRow: View {
         .onAppear {
             text = formattedText(value)
         }
-        .onChange(of: value) { _, newValue in
-            let newText = formattedText(newValue)
-            if text != newText {
-                text = newText
-            }
-        }
         .onChange(of: text) { _, newText in
             onChange(parseDouble(newText))
         }
