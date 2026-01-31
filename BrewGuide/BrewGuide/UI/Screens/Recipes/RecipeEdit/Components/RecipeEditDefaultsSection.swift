@@ -102,6 +102,7 @@ private struct RecipeEditNameFieldRow: View {
             )
             .textFieldStyle(.roundedBorder)
             .disabled(isDisabled)
+            .accessibilityIdentifier("RecipeNameField")
             
             if let error {
                 RecipeEditInlineErrorText(message: error)

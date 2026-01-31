@@ -29,6 +29,7 @@ struct RecipeEditNumericFieldRow: View {
                     .textFieldStyle(.roundedBorder)
                     .disabled(isDisabled)
                     .accessibilityLabel(title)
+                    .accessibilityIdentifier("\(title.replacing(" ", with: ""))Field")
                 
                 Text(unit)
                     .foregroundStyle(.secondary)

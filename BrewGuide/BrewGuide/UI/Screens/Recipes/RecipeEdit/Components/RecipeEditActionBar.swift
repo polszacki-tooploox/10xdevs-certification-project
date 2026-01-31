@@ -26,6 +26,7 @@ struct RecipeEditActionBar: View {
                 Button("Cancel", role: .cancel, action: onCancel)
                     .buttonStyle(.bordered)
                     .disabled(isSaving)
+                    .accessibilityIdentifier("RecipeEditCancelButton")
                 
                 Button(action: onSave) {
                     HStack(spacing: 8) {
@@ -40,6 +41,7 @@ struct RecipeEditActionBar: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!canSave)
+                .accessibilityIdentifier("RecipeEditSaveButton")
             }
             .padding(.horizontal)
         }

@@ -49,6 +49,7 @@ struct RecipeListRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabelText)
         .accessibilityHint("Double tap to view recipe details")
+        .accessibilityIdentifier("RecipeRow_\(recipe.name)")
         .swipeActions(edge: .leading) {
             Button {
                 onBrew()
